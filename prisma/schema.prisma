@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum ExpenseType {
+  OPERATIONAL
+  STOCK
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  DEBIT
+  TRANSFER
+  E_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Outlet {
+  id          String      @id @default(uuid())
+
+  name        String
+  address     String?
+  noTelp      String?
+
+  qrisImage   String?
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  users       User[]
+  products    Product[]
+  sales       Sale[]
+  expenses    Expense[]
+}
+
+model User {
+  id              String      @id @default(uuid())
+
+  name            String
+  email           String      @unique
+  password        String
+
+  role            Role        @default(ADMIN)
+
+  isVerified      Boolean     @default(false)
+  verifyToken     String?
+
+  resetToken      String?
+  resetTokenExp   DateTime?
+
+  outletId        String?
+  outlet          Outlet?     @relation(fields: [outletId], references: [id])
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  sales           Sale[]
+}
+
+model Category {
+  id          String      @id @default(uuid())
+
+  name        String      @unique
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  products    Product[]
+}
+
+model Product {
+  id            String      @id @default(uuid())
+
+  name          String
+
+  sku           String?     @unique
+  barcode       String?     @unique
+
+  stock         Int         @default(0)
+  minStock      Int         @default(5)
+
+  costPrice     Float
+  sellingPrice  Float
+
+  imageUrl      String?
+
+  categoryId    String?
+  category      Category?   @relation(fields: [categoryId], references: [id])
+
+  outletId      String
+  outlet        Outlet      @relation(fields: [outletId], references: [id])
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  saleItems     SaleItem[]
+}
+
+model Sale {
+  id               String           @id @default(uuid())
+
+  invoiceNumber    String           @unique
+
+  totalAmount      Float
+  totalProfit      Float
+
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus    @default(PENDING)
+
+  paidAmount       Float?
+  changeAmount     Float?
+
+  paymentProof     String?
+
+  outletId         String
+  outlet           Outlet           @relation(fields: [outletId], references: [id])
+
+  cashierId        String
+  cashier          User             @relation(fields: [cashierId], references: [id])
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  items            SaleItem[]
+}
+
+model SaleItem {
+  id             String      @id @default(uuid())
+
+  saleId         String
+  sale           Sale        @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId      String
+  product        Product     @relation(fields: [productId], references: [id])
+
+  quantity       Int
+
+  costPrice      Float
+  sellingPrice   Float
+
+  subtotal       Float
+  profit         Float
+
+  createdAt      DateTime    @default(now())
+}
+
+model Expense {
+  id             String        @id @default(uuid())
+
+  title          String
+  description    String?
+
+  type           ExpenseType   @default(OPERATIONAL)
+
+  amount         Float
+
+  outletId       String
+  outlet         Outlet        @relation(fields: [outletId], references: [id])
+
+  createdAt      DateTime      @default(now())
+}
