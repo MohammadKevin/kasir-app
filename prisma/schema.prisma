@@ -65,9 +65,6 @@ model User {
 
   role            Role        @default(ADMIN)
 
-  isVerified      Boolean     @default(false)
-  verifyToken     String?
-
   resetToken      String?
   resetTokenExp   DateTime?
 

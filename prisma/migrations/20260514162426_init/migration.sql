@@ -18,8 +18,6 @@ CREATE TABLE `User` (
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `role` ENUM('SUPER_ADMIN', 'ADMIN') NOT NULL DEFAULT 'ADMIN',
-    `isVerified` BOOLEAN NOT NULL DEFAULT false,
-    `verifyToken` VARCHAR(191) NULL,
     `resetToken` VARCHAR(191) NULL,
     `resetTokenExp` DATETIME(3) NULL,
     `outletId` VARCHAR(191) NULL,
