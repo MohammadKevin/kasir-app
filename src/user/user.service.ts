@@ -55,4 +55,21 @@ export class UserService {
       message: 'User berhasil dihapus',
     };
   }
+
+  async profile(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        outlet: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan');
+    }
+
+    return user;
+  }
 }

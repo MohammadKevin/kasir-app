@@ -32,4 +32,11 @@ export class UserController {
   delete(@Param('id') id: string) {
     return this.userService.delete(id);
   }
+
+  // SUPER ADMIN ONLY
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Get(':id/profile')
+  profile(@Param('id') id: string) {
+    return this.userService.profile(id);
+  }
 }
