@@ -15,18 +15,14 @@ import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Controller('expenses')
 export class ExpenseController {
-  constructor(
-    private readonly expenseService: ExpenseService,
-  ) {}
+  constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateExpenseDto,
   ) {
-    return this.expenseService.create(
-      dto,
-    );
+    return this.expenseService.create(dto);
   }
 
   @Get()
@@ -39,9 +35,7 @@ export class ExpenseController {
     @Param('id')
     id: string,
   ) {
-    return this.expenseService.findOne(
-      id,
-    );
+    return this.expenseService.findOne(id);
   }
 
   @Patch(':id')
@@ -52,10 +46,7 @@ export class ExpenseController {
     @Body()
     dto: UpdateExpenseDto,
   ) {
-    return this.expenseService.update(
-      id,
-      dto,
-    );
+    return this.expenseService.update(id, dto);
   }
 
   @Delete(':id')
@@ -63,8 +54,6 @@ export class ExpenseController {
     @Param('id')
     id: string,
   ) {
-    return this.expenseService.remove(
-      id,
-    );
+    return this.expenseService.remove(id);
   }
 }
