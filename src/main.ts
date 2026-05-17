@@ -34,7 +34,7 @@ async function bootstrap() {
   app.use(morgan('dev'));
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://gudang-baru-berkah.vercel.app'],
+    origin: ['http://localhost:3000', 'https://laila-collection.vercel.app/'],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
