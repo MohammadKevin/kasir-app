@@ -22,9 +22,6 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
-  getProfile(sub: any) {
-    throw new Error('Method not implemented.');
-  }
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
