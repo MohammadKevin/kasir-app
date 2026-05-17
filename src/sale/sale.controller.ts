@@ -27,7 +27,7 @@ export class SaleController {
     @Req() req,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    return this.saleService.create(dto, req.user.userId);
+    return this.saleService.create(dto, req.user.id);
   }
 
   @Get()
