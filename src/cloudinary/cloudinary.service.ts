@@ -14,14 +14,20 @@ export class CloudinaryService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File) {
+  async uploadFile(file: Express.Multer.File): Promise<string> {
     try {
-      const result = await cloudinary.uploader.upload(file.path, {
+      const base64File = `data:${file.mimetype};base64,${file.buffer.toString(
+        'base64',
+      )}`;
+
+      const result = await cloudinary.uploader.upload(base64File, {
         folder: 'kasir-app/products',
       });
 
       return result.secure_url;
-    } catch {
+    } catch (error) {
+      console.log(error);
+
       throw new InternalServerErrorException('Upload image gagal');
     }
   }

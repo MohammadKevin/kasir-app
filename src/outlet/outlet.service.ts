@@ -13,7 +13,7 @@ import { UpdateOutletDto } from './dto/update-outlet.dto';
 export class OutletService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateOutletDto) {
+  async create(dto: CreateOutletDto, file: Express.Multer.File) {
     const existingOutlet = await this.prisma.outlet.findFirst({
       where: {
         name: dto.name,
@@ -29,13 +29,14 @@ export class OutletService {
         name: dto.name,
         address: dto.address,
         noTelp: dto.noTelp,
-        qrisImage: dto.qrisImage,
+
+        // ambil nama file upload
+        qrisImage: file?.originalname || null,
       },
     });
 
     return {
       message: 'Outlet berhasil dibuat',
-
       data: outlet,
     };
   }
@@ -71,7 +72,7 @@ export class OutletService {
     return outlet;
   }
 
-  async update(id: string, dto: UpdateOutletDto) {
+  async update(id: string, dto: UpdateOutletDto, file: Express.Multer.File) {
     const outlet = await this.prisma.outlet.findUnique({
       where: {
         id,
@@ -91,13 +92,14 @@ export class OutletService {
         name: dto.name,
         address: dto.address,
         noTelp: dto.noTelp,
-        qrisImage: dto.qrisImage,
+
+        // kalau ada file baru update image
+        qrisImage: file?.originalname || outlet.qrisImage,
       },
     });
 
     return {
       message: 'Outlet berhasil diupdate',
-
       data: updatedOutlet,
     };
   }

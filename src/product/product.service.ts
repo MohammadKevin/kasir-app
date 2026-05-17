@@ -14,8 +14,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 @Injectable()
 export class ProductService {
   constructor(
-    private prisma: PrismaService,
-    private cloudinaryService: CloudinaryService,
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(dto: CreateProductDto, file?: Express.Multer.File) {
@@ -46,17 +46,32 @@ export class ProductService {
       imageUrl = await this.cloudinaryService.uploadFile(file);
     }
 
+    const totalProduct = await this.prisma.product.count();
+
+    const generatedSku = `PRD-${String(totalProduct + 1).padStart(4, '0')}`;
+
+    const generatedBarcode = `899${Date.now()}`;
+
     const product = await this.prisma.product.create({
       data: {
         name: dto.name,
-        sku: dto.sku,
-        barcode: dto.barcode,
+
+        sku: dto.sku || generatedSku,
+
+        barcode: dto.barcode || generatedBarcode,
+
         stock: dto.stock,
+
         minStock: dto.minStock,
+
         costPrice: dto.costPrice,
+
         sellingPrice: dto.sellingPrice,
+
         categoryId: dto.categoryId,
+
         outletId: dto.outletId,
+
         imageUrl,
       },
     });
@@ -124,13 +139,21 @@ export class ProductService {
 
       data: {
         name: dto.name,
-        sku: dto.sku,
-        barcode: dto.barcode,
+
+        sku: dto.sku || product.sku,
+
+        barcode: dto.barcode || product.barcode,
+
         stock: dto.stock,
+
         minStock: dto.minStock,
+
         costPrice: dto.costPrice,
+
         sellingPrice: dto.sellingPrice,
+
         categoryId: dto.categoryId,
+
         imageUrl,
       },
     });

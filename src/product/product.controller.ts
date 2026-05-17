@@ -34,6 +34,7 @@ export class ProductController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
+    console.log(file);
     return this.productService.create(dto, file);
   }
 
