@@ -17,6 +17,6 @@ export class AuthController {
   @Get('profile')
   getProfile(@Req() req) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    return this.authService.getProfile(req.user.sub);
+    return this.authService.getProfile(req.user.id);
   }
 }
