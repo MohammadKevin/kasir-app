@@ -20,6 +20,8 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
+import { Role } from '@prisma/client';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -29,25 +31,33 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          email: dto.email,
+        },
 
-      include: {
-        outlet: true,
-      },
-    });
+        include: {
+          outlet: true,
+        },
+      });
 
     if (!user) {
-      throw new UnauthorizedException('Email atau password salah');
+      throw new UnauthorizedException(
+        'Email atau password salah',
+      );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    const isPasswordValid =
+      await bcrypt.compare(
+        dto.password,
+        user.password,
+      );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email atau password salah');
+      throw new UnauthorizedException(
+        'Email atau password salah',
+      );
     }
 
     const payload = {
@@ -56,7 +66,10 @@ export class AuthService {
       role: user.role,
     };
 
-    const accessToken = await this.jwtService.signAsync(payload);
+    const accessToken =
+      await this.jwtService.signAsync(
+        payload,
+      );
 
     return {
       message: 'Login berhasil',
@@ -73,62 +86,97 @@ export class AuthService {
     };
   }
 
-  async createAdmin(dto: CreateAdminDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
+  async createAdmin(
+    dto: CreateAdminDto,
+  ) {
+    try {
+      const existingUser =
+        await this.prisma.user.findUnique({
+          where: {
+            email: dto.email,
+          },
+        });
 
-    if (existingUser) {
-      throw new BadRequestException('Email sudah digunakan');
+      if (existingUser) {
+        throw new BadRequestException(
+          'Email sudah digunakan',
+        );
+      }
+
+      const outlet =
+        await this.prisma.outlet.findUnique({
+          where: {
+            id: dto.outletId,
+          },
+        });
+
+      if (!outlet) {
+        throw new NotFoundException(
+          'Outlet tidak ditemukan',
+        );
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(
+          dto.password,
+          10,
+        );
+
+      const admin =
+        await this.prisma.user.create({
+          data: {
+            name: dto.name,
+            email: dto.email,
+            password: hashedPassword,
+            role: Role.ADMIN,
+            outletId: dto.outletId,
+          },
+        });
+
+      return {
+        message:
+          'Admin berhasil dibuat',
+
+        data: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+        },
+      };
+    } catch (error) {
+      console.error(
+        'CREATE ADMIN ERROR:',
+        error,
+      );
+
+      throw error;
     }
-
-    const outlet = await this.prisma.outlet.findUnique({
-      where: {
-        id: dto.outletId,
-      },
-    });
-
-    if (!outlet) {
-      throw new NotFoundException('Outlet tidak ditemukan');
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    const admin = await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        password: hashedPassword,
-        role: 'ADMIN',
-        outletId: dto.outletId,
-      },
-    });
-
-    return {
-      message: 'Admin berhasil dibuat',
-
-      data: admin,
-    };
   }
 
-  async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+  ) {
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          email: dto.email,
+        },
+      });
 
     if (!user) {
-      throw new NotFoundException('User tidak ditemukan');
+      throw new NotFoundException(
+        'User tidak ditemukan',
+      );
     }
 
-    const resetToken = randomUUID();
+    const resetToken =
+      randomUUID();
 
-    const resetTokenExp = new Date(Date.now() + 1000 * 60 * 15);
+    const resetTokenExp =
+      new Date(
+        Date.now() + 1000 * 60 * 15,
+      );
 
     await this.prisma.user.update({
       where: {
@@ -142,29 +190,44 @@ export class AuthService {
     });
 
     return {
-      message: 'Reset password berhasil dibuat',
+      message:
+        'Reset password berhasil dibuat',
 
       resetToken,
     };
   }
 
-  async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        resetToken: dto.token,
-      },
-    });
+  async resetPassword(
+    dto: ResetPasswordDto,
+  ) {
+    const user =
+      await this.prisma.user.findFirst({
+        where: {
+          resetToken: dto.token,
+        },
+      });
 
     if (!user) {
-      throw new BadRequestException('Token tidak valid');
+      throw new BadRequestException(
+        'Token tidak valid',
+      );
     }
 
-    if (!user.resetTokenExp || user.resetTokenExp < new Date()) {
-      throw new BadRequestException('Token expired');
+    if (
+      !user.resetTokenExp ||
+      user.resetTokenExp <
+        new Date()
+    ) {
+      throw new BadRequestException(
+        'Token expired',
+      );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    const hashedPassword =
+      await bcrypt.hash(
+        dto.newPassword,
+        10,
+      );
 
     await this.prisma.user.update({
       where: {
@@ -172,7 +235,6 @@ export class AuthService {
       },
 
       data: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         password: hashedPassword,
 
         resetToken: null,
@@ -181,11 +243,14 @@ export class AuthService {
     });
 
     return {
-      message: 'Password berhasil direset',
+      message:
+        'Password berhasil direset',
     };
   }
 
-  async getProfile(userId: string) {
+  async getProfile(
+    userId: string,
+  ) {
     return await this.prisma.user.findUnique({
       where: {
         id: userId,
