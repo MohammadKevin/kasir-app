@@ -5,7 +5,9 @@ import {
   IsOptional,
   IsString,
   Min,
-} from 'class-validator';
+} from "class-validator";
+
+import { Type } from "class-transformer";
 
 export class CreateProductDto {
   @IsString()
@@ -20,17 +22,21 @@ export class CreateProductDto {
   @IsString()
   barcode?: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   stock!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   minStock!: number;
 
+  @Type(() => Number)
   @IsNumber()
   costPrice!: number;
 
+  @Type(() => Number)
   @IsNumber()
   sellingPrice!: number;
 
