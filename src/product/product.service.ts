@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -166,24 +167,45 @@ export class ProductService {
   }
 
   async remove(id: string) {
-    const product = await this.prisma.product.findUnique({
+  const product =
+    await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+  if (!product) {
+    throw new NotFoundException(
+      'Produk tidak ditemukan',
+    );
+  }
+
+  const usedInTransaction =
+    await this.prisma.saleItem.findFirst({
       where: {
-        id,
+        productId: id,
       },
     });
 
-    if (!product) {
-      throw new NotFoundException('Product tidak ditemukan');
-    }
+  if (usedInTransaction) {
+    throw new BadRequestException(
+      'Produk sudah digunakan dalam transaksi dan tidak bisa dihapus',
+    );
+  }
 
+  try {
     await this.prisma.product.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     return {
-      message: 'Product berhasil dihapus',
+      message:
+        'Produk berhasil dihapus',
     };
+  } catch (error) {
+    console.error(error);
+
+    throw new InternalServerErrorException(
+      'Gagal menghapus produk',
+    );
   }
+}
 }

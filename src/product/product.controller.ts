@@ -62,7 +62,20 @@ export class ProductController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productService.remove(id);
+async remove(
+  @Param('id') id: string,
+) {
+  try {
+    return await this.productService.remove(
+      id,
+    );
+  } catch (error: any) {
+    console.error(
+      'DELETE PRODUCT ERROR',
+      error,
+    );
+
+    throw error;
   }
+}
 }
