@@ -72,4 +72,20 @@ export class UserService {
 
     return user;
   }
+
+  async getKaryawan() {
+  return this.prisma.user.findMany({
+    where: {
+      role: "ADMIN",
+    },
+
+    include: {
+      outlet: true,
+    },
+
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
 }

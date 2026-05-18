@@ -15,5 +15,5 @@ export class CreateOutletDto {
 
   @IsOptional()
   @IsString()
-  qrisImage?: string;
+  qrisImage?: string; 
 }

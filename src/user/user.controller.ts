@@ -39,4 +39,9 @@ export class UserController {
   profile(@Param('id') id: string) {
     return this.userService.profile(id);
   }
+
+  @Get("karyawan")
+  getKaryawan() {
+    return this.userService.getKaryawan();
+  }
 }
