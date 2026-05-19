@@ -94,10 +94,31 @@ CREATE TABLE `Customer` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Discount` (
+    `id` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `code` VARCHAR(191) NULL,
+    `type` ENUM('PERCENTAGE', 'FIXED') NOT NULL,
+    `value` DOUBLE NOT NULL,
+    `minPurchase` DOUBLE NULL,
+    `maxDiscount` DOUBLE NULL,
+    `startDate` DATETIME(3) NULL,
+    `endDate` DATETIME(3) NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `scope` ENUM('GLOBAL', 'MANUAL') NOT NULL DEFAULT 'GLOBAL',
+    `createdById` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `Sale` (
     `id` VARCHAR(191) NOT NULL,
     `invoiceNumber` VARCHAR(191) NOT NULL,
     `subtotalAmount` DOUBLE NOT NULL DEFAULT 0,
+    `discountId` VARCHAR(191) NULL,
     `discountType` ENUM('PERCENTAGE', 'FIXED') NULL,
     `discountValue` DOUBLE NOT NULL DEFAULT 0,
     `discountAmount` DOUBLE NOT NULL DEFAULT 0,
@@ -319,7 +340,13 @@ ALTER TABLE `Product` ADD CONSTRAINT `Product_categoryId_fkey` FOREIGN KEY (`cat
 ALTER TABLE `Product` ADD CONSTRAINT `Product_outletId_fkey` FOREIGN KEY (`outletId`) REFERENCES `Outlet`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Discount` ADD CONSTRAINT `Discount_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Sale` ADD CONSTRAINT `Sale_customerId_fkey` FOREIGN KEY (`customerId`) REFERENCES `Customer`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Sale` ADD CONSTRAINT `Sale_discountId_fkey` FOREIGN KEY (`discountId`) REFERENCES `Discount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Sale` ADD CONSTRAINT `Sale_outletId_fkey` FOREIGN KEY (`outletId`) REFERENCES `Outlet`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

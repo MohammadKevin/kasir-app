@@ -24,6 +24,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { ReturnsModule } from './returns/returns.module';
 import { CashierShiftsModule } from './cashier-shifts/cashier-shifts.module';
 import { SettingsModule } from './settings/settings.module';
+import { DiscountsModule } from './discounts/discounts.module';
 
 @Module({
   imports: [
@@ -85,6 +86,8 @@ import { SettingsModule } from './settings/settings.module';
     CashierShiftsModule,
 
     SettingsModule,
+
+    DiscountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

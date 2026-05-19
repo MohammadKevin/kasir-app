@@ -42,6 +42,11 @@ enum DiscountType {
   FIXED
 }
 
+enum DiscountScope {
+  GLOBAL
+  MANUAL
+}
+
 enum StockMovementType {
   IN
   OUT
@@ -66,12 +71,18 @@ enum ShiftStatus {
 
 model AppSetting {
   id              String   @id @default(uuid())
+
   storeName       String
+
   logo            String?
+
   phone           String?
   address         String?
+
   receiptFooter   String?
+
   taxPercentage   Float @default(0)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -80,6 +91,7 @@ model Outlet {
   id              String   @id @default(uuid())
 
   name            String
+
   address         String?
   noTelp          String?
 
@@ -101,13 +113,20 @@ model Outlet {
 
 model User {
   id                String   @id @default(uuid())
+
   name              String
+
   email             String   @unique
+
   password          String
+
   role              Role @default(CASHIER)
+
   isActive          Boolean @default(true)
+
   resetToken        String?
   resetTokenExp     DateTime?
+
   outletId          String?
 
   outlet            Outlet? @relation(fields: [outletId], references: [id], onDelete: SetNull)
@@ -116,17 +135,27 @@ model User {
   updatedAt         DateTime @updatedAt
 
   sales             Sale[] @relation("CashierSales")
+
   cancelledSales    Sale[] @relation("CancelledBy")
+
   shifts            CashierShift[]
+
   stockMovements    StockMovement[]
+
   logs              ActivityLog[]
+
   histories         TransactionHistory[]
+
   carts             Cart[]
+
+  discounts         Discount[]
 }
 
 model Category {
   id              String   @id @default(uuid())
+
   name            String   @unique
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -135,16 +164,27 @@ model Category {
 
 model Product {
   id                String   @id @default(uuid())
+
   name              String
+
   sku               String? @unique
+
   barcode           String? @unique
+
   stock             Int @default(0)
+
   minStock          Int @default(5)
+
   costPrice         Float
+
   sellingPrice      Float
+
   imageUrl          String?
+
   isActive          Boolean @default(true)
+
   categoryId        String?
+
   outletId          String
 
   category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -155,39 +195,89 @@ model Product {
   updatedAt         DateTime @updatedAt
 
   saleItems         SaleItem[]
+
   stockMovements    StockMovement[]
+
   purchaseItems     PurchaseItem[]
+
   cartItems         CartItem[]
+
   returnItems       ReturnItem[]
 }
 
 model Customer {
   id              String   @id @default(uuid())
+
   name            String
+
   phone           String? @unique
+
   email           String?
+
   address         String?
+
   points          Int @default(0)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   sales           Sale[]
+
   carts           Cart[]
+}
+
+model Discount {
+  id              String   @id @default(uuid())
+
+  name            String
+
+  code            String?
+
+  type            DiscountType
+
+  value           Float
+
+  minPurchase     Float?
+
+  maxDiscount     Float?
+
+  startDate       DateTime?
+
+  endDate         DateTime?
+
+  isActive        Boolean @default(true)
+
+  scope           DiscountScope @default(GLOBAL)
+
+  createdById     String?
+
+  createdBy       User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  sales           Sale[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Sale {
   id                String @id @default(uuid())
+
   invoiceNumber     String @unique
 
   subtotalAmount    Float @default(0)
 
+  discountId        String?
+
   discountType      DiscountType?
+
   discountValue     Float @default(0)
+
   discountAmount    Float @default(0)
 
   taxAmount         Float @default(0)
 
   totalAmount       Float
+
   totalProfit       Float
 
   paymentMethod     PaymentMethod
@@ -195,6 +285,7 @@ model Sale {
   paymentStatus     PaymentStatus @default(PENDING)
 
   paidAmount        Float?
+
   changeAmount      Float?
 
   paymentProof      String?
@@ -208,10 +299,14 @@ model Sale {
   cashierId         String
 
   cancelledAt       DateTime?
+
   cancelReason      String?
+
   cancelledById     String?
 
   customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  discount          Discount? @relation(fields: [discountId], references: [id], onDelete: SetNull)
 
   outlet            Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
@@ -223,8 +318,11 @@ model Sale {
   updatedAt         DateTime @updatedAt
 
   items             SaleItem[]
+
   histories         TransactionHistory[]
+
   payments          SalePayment[]
+
   returns           ReturnTransaction[]
 }
 
@@ -232,14 +330,17 @@ model SaleItem {
   id              String @id @default(uuid())
 
   saleId          String
+
   productId       String
 
   quantity        Int
 
   costPrice       Float
+
   sellingPrice    Float
 
   subtotal        Float
+
   profit          Float
 
   sale            Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
@@ -323,6 +424,7 @@ model StockMovement {
   quantity        Int
 
   beforeStock     Int
+
   afterStock      Int
 
   note            String?
