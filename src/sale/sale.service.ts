@@ -20,10 +20,16 @@ export class SaleService {
     });
 
     if (!outlet) {
-      throw new NotFoundException('Outlet tidak ditemukan');
+      throw new NotFoundException(
+        'Outlet tidak ditemukan',
+      );
     }
 
-    let totalAmount = 0;
+    const appSetting =
+      await this.prisma.appSetting.findFirst();
+
+    let subtotalAmount = 0;
+
     let totalProfit = 0;
 
     const saleItems: {
@@ -35,15 +41,24 @@ export class SaleService {
       profit: number;
     }[] = [];
 
+    const productSnapshots: {
+      id: string;
+      stock: number;
+      quantity: number;
+    }[] = [];
+
     for (const item of dto.items) {
-      const product = await this.prisma.product.findUnique({
-        where: {
-          id: item.productId,
-        },
-      });
+      const product =
+        await this.prisma.product.findUnique({
+          where: {
+            id: item.productId,
+          },
+        });
 
       if (!product) {
-        throw new NotFoundException('Product tidak ditemukan');
+        throw new NotFoundException(
+          'Product tidak ditemukan',
+        );
       }
 
       if (product.stock < item.quantity) {
@@ -52,11 +67,16 @@ export class SaleService {
         );
       }
 
-      const subtotal = product.sellingPrice * item.quantity;
+      const subtotal =
+        product.sellingPrice * item.quantity;
 
-      const profit = (product.sellingPrice - product.costPrice) * item.quantity;
+      const profit =
+        (product.sellingPrice -
+          product.costPrice) *
+        item.quantity;
 
-      totalAmount += subtotal;
+      subtotalAmount += subtotal;
+
       totalProfit += profit;
 
       saleItems.push({
@@ -69,69 +89,287 @@ export class SaleService {
         sellingPrice: product.sellingPrice,
 
         subtotal,
+
         profit,
       });
+
+      productSnapshots.push({
+        id: product.id,
+
+        stock: product.stock,
+
+        quantity: item.quantity,
+      });
     }
 
+    let discountAmount = 0;
+
+    if (
+      dto.discountType === 'PERCENTAGE'
+    ) {
+      discountAmount =
+        (subtotalAmount *
+          (dto.discountValue || 0)) /
+        100;
+    }
+
+    if (dto.discountType === 'FIXED') {
+      discountAmount =
+        dto.discountValue || 0;
+    }
+
+    const taxPercentage =
+      appSetting?.taxPercentage || 0;
+
+    const afterDiscount =
+      subtotalAmount - discountAmount;
+
+    const taxAmount =
+      (afterDiscount * taxPercentage) /
+      100;
+
+    const totalAmount =
+      afterDiscount + taxAmount;
+
     if (dto.paymentMethod === 'CASH') {
-      if (!dto.paidAmount || dto.paidAmount < totalAmount) {
-        throw new BadRequestException('Uang pembayaran kurang');
+      if (
+        !dto.paidAmount ||
+        dto.paidAmount < totalAmount
+      ) {
+        throw new BadRequestException(
+          'Uang pembayaran kurang',
+        );
       }
     }
 
-    const invoiceNumber = `INV-${Date.now()}`;
-
-    const sale = await this.prisma.$transaction(async (prisma) => {
-      const createdSale = await prisma.sale.create({
-        data: {
-          invoiceNumber,
-
-          totalAmount,
-          totalProfit,
-
-          paymentMethod: dto.paymentMethod,
-
-          paymentStatus: 'PAID',
-
-          paidAmount: dto.paidAmount,
-
-          changeAmount: dto.paidAmount ? dto.paidAmount - totalAmount : 0,
-
-          paymentProof: dto.paymentProof,
-
-          outletId: dto.outletId,
-
-          cashierId,
-
-          items: {
-            create: saleItems,
+    const totalSalesToday =
+      await this.prisma.sale.count({
+        where: {
+          createdAt: {
+            gte: new Date(
+              new Date().setHours(
+                0,
+                0,
+                0,
+                0,
+              ),
+            ),
           },
-        },
-
-        include: {
-          items: true,
         },
       });
 
-      for (const item of dto.items) {
-        await prisma.product.update({
-          where: {
-            id: item.productId,
-          },
+    const invoiceNumber = `INV-${new Date()
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, '')}-${String(
+      totalSalesToday + 1,
+    ).padStart(4, '0')}`;
 
-          data: {
-            stock: {
-              decrement: item.quantity,
+    const sale =
+      await this.prisma.$transaction(
+        async (prisma) => {
+          const createdSale =
+            await prisma.sale.create({
+              data: {
+                invoiceNumber,
+
+                subtotalAmount,
+
+                discountType:
+                  dto.discountType,
+
+                discountValue:
+                  dto.discountValue || 0,
+
+                discountAmount,
+
+                taxAmount,
+
+                totalAmount,
+
+                totalProfit,
+
+                paymentMethod:
+                  dto.paymentMethod,
+
+                paymentStatus:
+                  dto.paymentMethod ===
+                  'CASH'
+                    ? 'PAID'
+                    : 'PENDING',
+
+                paidAmount:
+                  dto.paidAmount,
+
+                changeAmount:
+                  dto.paidAmount
+                    ? dto.paidAmount -
+                      totalAmount
+                    : 0,
+
+                paymentProof:
+                  dto.paymentProof,
+
+                notes: dto.notes,
+
+                customerId:
+                  dto.customerId,
+
+                outletId:
+                  dto.outletId,
+
+                cashierId,
+
+                items: {
+                  create: saleItems,
+                },
+              },
+
+              include: {
+                items: true,
+
+                customer: true,
+
+                cashier: true,
+              },
+            });
+
+          await prisma.salePayment.create({
+            data: {
+              saleId: createdSale.id,
+
+              method:
+                dto.paymentMethod,
+
+              amount: totalAmount,
             },
-          },
-        });
-      }
+          });
 
-      return createdSale;
-    });
+          for (const item of dto.items) {
+            const snapshot =
+              productSnapshots.find(
+                (p) =>
+                  p.id === item.productId,
+              );
+
+            if (!snapshot) continue;
+
+            const beforeStock =
+              snapshot.stock;
+
+            const afterStock =
+              beforeStock -
+              item.quantity;
+
+            await prisma.product.update({
+              where: {
+                id: item.productId,
+              },
+
+              data: {
+                stock: {
+                  decrement:
+                    item.quantity,
+                },
+              },
+            });
+
+            await prisma.stockMovement.create({
+              data: {
+                productId:
+                  item.productId,
+
+                type: 'SALE',
+
+                quantity:
+                  item.quantity,
+
+                beforeStock,
+
+                afterStock,
+
+                note: `Sale ${invoiceNumber}`,
+
+                createdById:
+                  cashierId,
+              },
+            });
+          }
+
+          await prisma.transactionHistory.create(
+            {
+              data: {
+                saleId:
+                  createdSale.id,
+
+                action:
+                  'CREATE_SALE',
+
+                description: `Transaction ${invoiceNumber} created`,
+
+                createdById:
+                  cashierId,
+              },
+            },
+          );
+
+          await prisma.activityLog.create({
+            data: {
+              userId: cashierId,
+
+              action: 'CREATE',
+
+              entity: 'SALE',
+
+              entityId:
+                createdSale.id,
+
+              description: `Create sale ${invoiceNumber}`,
+            },
+          });
+
+          if (dto.cartId) {
+            await prisma.cart.update({
+              where: {
+                id: dto.cartId,
+              },
+
+              data: {
+                status:
+                  'COMPLETED',
+
+                completedAt:
+                  new Date(),
+              },
+            });
+          }
+
+          if (dto.customerId) {
+            const points =
+              Math.floor(
+                totalAmount / 10000,
+              );
+
+            await prisma.customer.update({
+              where: {
+                id: dto.customerId,
+              },
+
+              data: {
+                points: {
+                  increment: points,
+                },
+              },
+            });
+          }
+
+          return createdSale;
+        },
+      );
 
     return {
-      message: 'Transaction berhasil',
+      message:
+        'Transaction berhasil',
 
       data: sale,
     };
@@ -143,6 +381,12 @@ export class SaleService {
         outlet: true,
 
         cashier: true,
+
+        customer: true,
+
+        payments: true,
+
+        histories: true,
 
         items: {
           include: {
@@ -158,28 +402,184 @@ export class SaleService {
   }
 
   async findOne(id: string) {
-    const sale = await this.prisma.sale.findUnique({
-      where: {
-        id,
-      },
+    const sale =
+      await this.prisma.sale.findUnique({
+        where: {
+          id,
+        },
 
-      include: {
-        outlet: true,
+        include: {
+          outlet: true,
 
-        cashier: true,
+          cashier: true,
 
-        items: {
-          include: {
-            product: true,
+          customer: true,
+
+          payments: true,
+
+          histories: true,
+
+          returns: true,
+
+          items: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-    });
+      });
 
     if (!sale) {
-      throw new NotFoundException('Transaction tidak ditemukan');
+      throw new NotFoundException(
+        'Transaction tidak ditemukan',
+      );
     }
 
     return sale;
+  }
+
+  async cancelSale(
+    saleId: string,
+    userId: string,
+    reason: string,
+  ) {
+    const sale =
+      await this.prisma.sale.findUnique({
+        where: {
+          id: saleId,
+        },
+
+        include: {
+          items: true,
+        },
+      });
+
+    if (!sale) {
+      throw new NotFoundException(
+        'Transaction tidak ditemukan',
+      );
+    }
+
+    if (
+      sale.paymentStatus ===
+      'CANCELLED'
+    ) {
+      throw new BadRequestException(
+        'Transaction sudah dicancel',
+      );
+    }
+
+    await this.prisma.$transaction(
+      async (prisma) => {
+        for (const item of sale.items) {
+          const product =
+            await prisma.product.findUnique(
+              {
+                where: {
+                  id: item.productId,
+                },
+              },
+            );
+
+          if (!product) continue;
+
+          const beforeStock =
+            product.stock;
+
+          const afterStock =
+            beforeStock +
+            item.quantity;
+
+          await prisma.product.update({
+            where: {
+              id: item.productId,
+            },
+
+            data: {
+              stock: {
+                increment:
+                  item.quantity,
+              },
+            },
+          });
+
+          await prisma.stockMovement.create({
+            data: {
+              productId:
+                item.productId,
+
+              type: 'CANCEL',
+
+              quantity:
+                item.quantity,
+
+              beforeStock,
+
+              afterStock,
+
+              note: `Cancel transaction ${sale.invoiceNumber}`,
+
+              createdById:
+                userId,
+            },
+          });
+        }
+
+        await prisma.sale.update({
+          where: {
+            id: saleId,
+          },
+
+          data: {
+            paymentStatus:
+              'CANCELLED',
+
+            cancelledAt:
+              new Date(),
+
+            cancelReason:
+              reason,
+
+            cancelledById:
+              userId,
+          },
+        });
+
+        await prisma.transactionHistory.create(
+          {
+            data: {
+              saleId,
+
+              action:
+                'CANCEL_SALE',
+
+              description: reason,
+
+              createdById:
+                userId,
+            },
+          },
+        );
+
+        await prisma.activityLog.create({
+          data: {
+            userId,
+
+            action: 'CANCEL',
+
+            entity: 'SALE',
+
+            entityId: saleId,
+
+            description: `Cancel sale ${sale.invoiceNumber}`,
+          },
+        });
+      },
+    );
+
+    return {
+      message:
+        'Transaction berhasil dicancel',
+    };
   }
 }

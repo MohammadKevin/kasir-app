@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 
 import { ReportService } from './report.service';
 
@@ -8,7 +14,9 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @Controller('reports')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ReportController {
-  constructor(private readonly reportService: ReportService) {}
+  constructor(
+    private readonly reportService: ReportService,
+  ) {}
 
   @Get('sales')
   salesReport(
@@ -21,7 +29,11 @@ export class ReportController {
     @Query('outletId')
     outletId?: string,
   ) {
-    return this.reportService.salesReport(startDate, endDate, outletId);
+    return this.reportService.salesReport(
+      startDate,
+      endDate,
+      outletId,
+    );
   }
 
   @Get('expenses')
@@ -35,7 +47,11 @@ export class ReportController {
     @Query('outletId')
     outletId?: string,
   ) {
-    return this.reportService.expenseReport(startDate, endDate, outletId);
+    return this.reportService.expenseReport(
+      startDate,
+      endDate,
+      outletId,
+    );
   }
 
   @Get('profit-loss')
@@ -49,11 +65,54 @@ export class ReportController {
     @Query('outletId')
     outletId?: string,
   ) {
-    return this.reportService.profitLossReport(startDate, endDate, outletId);
+    return this.reportService.profitLossReport(
+      startDate,
+      endDate,
+      outletId,
+    );
   }
 
   @Get('transaction/:id')
-  transactionDetail(@Param('id') id: string) {
-    return this.reportService.transactionDetail(id);
+  transactionDetail(
+    @Param('id') id: string,
+  ) {
+    return this.reportService.transactionDetail(
+      id,
+    );
+  }
+
+  @Get('dashboard-summary')
+  dashboardSummary() {
+    return this.reportService.dashboardSummary();
+  }
+
+  @Get('top-products')
+  topProducts() {
+    return this.reportService.topProducts();
+  }
+
+  @Get('low-stock')
+  lowStockReport() {
+    return this.reportService.lowStockReport();
+  }
+
+  @Get('cashier-performance')
+  cashierPerformance() {
+    return this.reportService.cashierPerformance();
+  }
+
+  @Get('returns')
+  returnReport() {
+    return this.reportService.returnReport();
+  }
+
+  @Get('charts/daily-sales')
+  dailySalesChart() {
+    return this.reportService.dailySalesChart();
+  }
+
+  @Get('charts/monthly-sales')
+  monthlySalesChart() {
+    return this.reportService.monthlySalesChart();
   }
 }

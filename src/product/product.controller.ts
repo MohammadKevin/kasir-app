@@ -24,7 +24,9 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 @Controller('products')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+  ) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('image'))
@@ -34,13 +36,29 @@ export class ProductController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
-    console.log(file);
-    return this.productService.create(dto, file);
+    return this.productService.create(
+      dto,
+      file,
+    );
   }
 
   @Get()
   findAll() {
     return this.productService.findAll();
+  }
+
+  @Get('low-stock/all')
+  findLowStock() {
+    return this.productService.findLowStock();
+  }
+
+  @Get('barcode/:barcode')
+  findByBarcode(
+    @Param('barcode') barcode: string,
+  ) {
+    return this.productService.findByBarcode(
+      barcode,
+    );
   }
 
   @Get(':id')
@@ -58,24 +76,19 @@ export class ProductController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
-    return this.productService.update(id, dto, file);
+    return this.productService.update(
+      id,
+      dto,
+      file,
+    );
   }
 
   @Delete(':id')
-async remove(
-  @Param('id') id: string,
-) {
-  try {
-    return await this.productService.remove(
+  async remove(
+    @Param('id') id: string,
+  ) {
+    return this.productService.remove(
       id,
     );
-  } catch (error: any) {
-    console.error(
-      'DELETE PRODUCT ERROR',
-      error,
-    );
-
-    throw error;
   }
-}
 }

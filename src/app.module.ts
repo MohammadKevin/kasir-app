@@ -16,6 +16,14 @@ import { ReportModule } from './report/report.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CartsModule } from './carts/carts.module';
+import { CustomersModule } from './customers/customers.module';
+import { StockMovementsModule } from './stock-movements/stock-movements.module';
+import { PurchasesModule } from './purchases/purchases.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { ReturnsModule } from './returns/returns.module';
+import { CashierShiftsModule } from './cashier-shifts/cashier-shifts.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -61,6 +69,22 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     PrismaModule,
 
     CloudinaryModule,
+
+    CartsModule,
+
+    CustomersModule,
+
+    StockMovementsModule,
+
+    PurchasesModule,
+
+    SuppliersModule,
+
+    ReturnsModule,
+
+    CashierShiftsModule,
+
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

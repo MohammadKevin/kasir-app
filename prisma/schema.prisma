@@ -10,11 +10,14 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   ADMIN
+  CASHIER
 }
 
 enum ExpenseType {
   OPERATIONAL
   STOCK
+  SALARY
+  RENT
   OTHER
 }
 
@@ -22,6 +25,7 @@ enum PaymentMethod {
   CASH
   QRIS
   DEBIT
+  CREDIT_CARD
   TRANSFER
   E_WALLET
 }
@@ -30,154 +34,466 @@ enum PaymentStatus {
   PENDING
   PAID
   CANCELLED
+  REFUNDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  SALE
+  RETURN
+  CANCEL
+  ADJUSTMENT
+}
+
+enum CartStatus {
+  ACTIVE
+  HOLD
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+model AppSetting {
+  id              String   @id @default(uuid())
+  storeName       String
+  logo            String?
+  phone           String?
+  address         String?
+  receiptFooter   String?
+  taxPercentage   Float @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Outlet {
-  id          String   @id @default(uuid())
+  id              String   @id @default(uuid())
+  name            String
+  address         String?
+  noTelp          String?
+  qrisImage       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  name        String
-  address     String?
-  noTelp      String?
-
-  qrisImage   String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       User[]
-  products    Product[]
-  sales       Sale[]
-  expenses    Expense[]
+  users           User[]
+  products        Product[]
+  sales           Sale[]
+  expenses        Expense[]
+  shifts          CashierShift[]
+  purchases       Purchase[]
+  carts           Cart[]
 }
 
 model User {
+  id                String   @id @default(uuid())
+  name              String
+  email             String   @unique
+  password          String
+  role              Role @default(CASHIER)
+  isActive          Boolean @default(true)
+  resetToken        String?
+  resetTokenExp     DateTime?
+  outletId          String?
+
+  outlet            Outlet? @relation(fields: [outletId], references: [id], onDelete: SetNull)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sales             Sale[] @relation("CashierSales")
+  cancelledSales    Sale[] @relation("CancelledBy")
+  shifts            CashierShift[]
+  stockMovements    StockMovement[]
+  logs              ActivityLog[]
+  histories         TransactionHistory[]
+  carts             Cart[]
+}
+
+model Category {
   id              String   @id @default(uuid())
+  name            String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  products        Product[]
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String
+  sku               String? @unique
+  barcode           String? @unique
+  stock             Int @default(0)
+  minStock          Int @default(5)
+  costPrice         Float
+  sellingPrice      Float
+  imageUrl          String?
+  isActive          Boolean @default(true)
+  categoryId        String?
+  outletId          String
+
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  outlet            Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  saleItems         SaleItem[]
+  stockMovements    StockMovement[]
+  purchaseItems     PurchaseItem[]
+  cartItems         CartItem[]
+  returnItems       ReturnItem[]
+}
+
+model Customer {
+  id              String   @id @default(uuid())
   name            String
-  email           String   @unique
-  password        String
-
-  role            Role @default(ADMIN)
-
-  resetToken      String?
-  resetTokenExp   DateTime?
-
-  outletId        String?
-
-  outlet          Outlet? @relation(fields: [outletId], references: [id], onDelete: SetNull)
-
+  phone           String? @unique
+  email           String?
+  address         String?
+  points          Int @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   sales           Sale[]
-}
-
-model Category {
-  id          String   @id @default(uuid())
-
-  name        String   @unique
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  products    Product[]
-}
-
-model Product {
-  id            String   @id @default(uuid())
-
-  name          String
-
-  sku           String? @unique
-  barcode       String? @unique
-
-  stock         Int @default(0)
-  minStock      Int @default(5)
-
-  costPrice     Float
-  sellingPrice  Float
-
-  imageUrl      String?
-
-  categoryId    String?
-
-  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  outletId      String
-
-  outlet        Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  saleItems     SaleItem[]
+  carts           Cart[]
 }
 
 model Sale {
-  id               String @id @default(uuid())
+  id                String @id @default(uuid())
+  invoiceNumber     String @unique
 
-  invoiceNumber    String @unique
+  subtotalAmount    Float @default(0)
 
-  totalAmount      Float
-  totalProfit      Float
+  discountType      DiscountType?
+  discountValue     Float @default(0)
+  discountAmount    Float @default(0)
 
-  paymentMethod    PaymentMethod
-  paymentStatus    PaymentStatus @default(PENDING)
+  taxAmount         Float @default(0)
 
-  paidAmount       Float?
-  changeAmount     Float?
+  totalAmount       Float
+  totalProfit       Float
 
-  paymentProof     String?
+  paymentMethod     PaymentMethod
 
-  outletId         String
+  paymentStatus     PaymentStatus @default(PENDING)
 
-  outlet           Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  paidAmount        Float?
+  changeAmount      Float?
 
-  cashierId        String
+  paymentProof      String?
 
-  cashier          User @relation(fields: [cashierId], references: [id], onDelete: Cascade)
+  notes             String?
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  customerId        String?
 
-  items            SaleItem[]
+  outletId          String
+
+  cashierId         String
+
+  cancelledAt       DateTime?
+  cancelReason      String?
+  cancelledById     String?
+
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  outlet            Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  cashier           User @relation("CashierSales", fields: [cashierId], references: [id], onDelete: Cascade)
+
+  cancelledBy       User? @relation("CancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  items             SaleItem[]
+  histories         TransactionHistory[]
+  payments          SalePayment[]
+  returns           ReturnTransaction[]
 }
 
 model SaleItem {
-  id            String @id @default(uuid())
+  id              String @id @default(uuid())
 
-  saleId        String
+  saleId          String
+  productId       String
 
-  sale          Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  quantity        Int
 
-  productId     String
+  costPrice       Float
+  sellingPrice    Float
 
-  product       Product @relation(fields: [productId], references: [id], onDelete: NoAction)
+  subtotal        Float
+  profit          Float
 
-  quantity      Int
+  sale            Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
-  costPrice     Float
-  sellingPrice  Float
+  product         Product @relation(fields: [productId], references: [id], onDelete: NoAction)
 
-  subtotal      Float
-  profit        Float
+  createdAt       DateTime @default(now())
+}
 
-  createdAt     DateTime @default(now())
+model SalePayment {
+  id              String @id @default(uuid())
+
+  saleId          String
+
+  method          PaymentMethod
+
+  amount          Float
+
+  sale            Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+}
+
+model TransactionHistory {
+  id              String @id @default(uuid())
+
+  saleId          String
+
+  action          String
+
+  description     String?
+
+  createdById     String?
+
+  sale            Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  createdBy       User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+}
+
+model ReturnTransaction {
+  id              String @id @default(uuid())
+
+  saleId          String
+
+  reason          String?
+
+  totalRefund     Float
+
+  sale            Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  items           ReturnItem[]
+}
+
+model ReturnItem {
+  id                  String @id @default(uuid())
+
+  returnId            String
+
+  productId           String
+
+  quantity            Int
+
+  subtotal            Float
+
+  returnTransaction   ReturnTransaction @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  product             Product @relation(fields: [productId], references: [id], onDelete: NoAction)
+}
+
+model StockMovement {
+  id              String @id @default(uuid())
+
+  productId       String
+
+  type            StockMovementType
+
+  quantity        Int
+
+  beforeStock     Int
+  afterStock      Int
+
+  note            String?
+
+  createdById     String?
+
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdBy       User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+}
+
+model Cart {
+  id              String @id @default(uuid())
+
+  cartNumber      String @unique
+
+  outletId        String
+
+  cashierId       String
+
+  customerId      String?
+
+  status          CartStatus @default(ACTIVE)
+
+  heldAt          DateTime?
+
+  completedAt     DateTime?
+
+  expiredAt       DateTime?
+
+  outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  cashier         User @relation(fields: [cashierId], references: [id], onDelete: Cascade)
+
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           CartItem[]
+}
+
+model CartItem {
+  id              String @id @default(uuid())
+
+  cartId          String
+
+  productId       String
+
+  quantity        Int
+
+  price           Float
+
+  subtotal        Float
+
+  cart            Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model CashierShift {
+  id              String @id @default(uuid())
+
+  cashierId       String
+
+  outletId        String
+
+  startCash       Float
+
+  endCash         Float?
+
+  totalSales      Float @default(0)
+
+  status          ShiftStatus @default(OPEN)
+
+  cashier         User @relation(fields: [cashierId], references: [id], onDelete: Cascade)
+
+  outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  openedAt        DateTime @default(now())
+
+  closedAt        DateTime?
 }
 
 model Expense {
-  id            String @id @default(uuid())
+  id              String @id @default(uuid())
 
-  title         String
-  description   String?
+  title           String
 
-  type          ExpenseType @default(OPERATIONAL)
+  description     String?
 
-  amount        Float
+  type            ExpenseType @default(OPERATIONAL)
 
-  outletId      String
+  amount          Float
 
-  outlet        Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  outletId        String
 
-  createdAt     DateTime @default(now())
+  outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+}
+
+model Supplier {
+  id              String @id @default(uuid())
+
+  name            String
+
+  phone           String?
+
+  email           String?
+
+  address         String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchases       Purchase[]
+}
+
+model Purchase {
+  id              String @id @default(uuid())
+
+  invoiceNumber   String @unique
+
+  supplierId      String
+
+  outletId        String
+
+  totalAmount     Float
+
+  notes           String?
+
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           PurchaseItem[]
+}
+
+model PurchaseItem {
+  id              String @id @default(uuid())
+
+  purchaseId      String
+
+  productId       String
+
+  quantity        Int
+
+  costPrice       Float
+
+  subtotal        Float
+
+  purchase        Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id              String @id @default(uuid())
+
+  userId          String
+
+  action          String
+
+  entity          String
+
+  entityId        String
+
+  description     String?
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
 }
