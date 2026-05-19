@@ -78,10 +78,15 @@ model AppSetting {
 
 model Outlet {
   id              String   @id @default(uuid())
+
   name            String
   address         String?
   noTelp          String?
+
   qrisImage       String?
+
+  isActive        Boolean @default(true)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

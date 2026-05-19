@@ -20,6 +20,7 @@ CREATE TABLE `Outlet` (
     `address` VARCHAR(191) NULL,
     `noTelp` VARCHAR(191) NULL,
     `qrisImage` VARCHAR(191) NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
