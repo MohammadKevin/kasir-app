@@ -10,18 +10,36 @@ import { CreateSaleDto } from './dto/create-sale.dto';
 
 @Injectable()
 export class SaleService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+  ) {}
 
-  async create(dto: CreateSaleDto, cashierId: string) {
-    const outlet = await this.prisma.outlet.findUnique({
-      where: {
-        id: dto.outletId,
-      },
-    });
+  async create(
+    dto: CreateSaleDto,
+  ) {
+    const outlet =
+      await this.prisma.outlet.findUnique({
+        where: {
+          id: dto.outletId,
+        },
+      });
 
     if (!outlet) {
       throw new NotFoundException(
         'Outlet tidak ditemukan',
+      );
+    }
+
+    const cashier =
+      await this.prisma.cashier.findUnique({
+        where: {
+          id: dto.cashierId,
+        },
+      });
+
+    if (!cashier) {
+      throw new NotFoundException(
+        'Cashier tidak ditemukan',
       );
     }
 
@@ -61,14 +79,18 @@ export class SaleService {
         );
       }
 
-      if (product.stock < item.quantity) {
+      if (
+        product.stock <
+        item.quantity
+      ) {
         throw new BadRequestException(
           `Stock product ${product.name} tidak cukup`,
         );
       }
 
       const subtotal =
-        product.sellingPrice * item.quantity;
+        product.sellingPrice *
+        item.quantity;
 
       const profit =
         (product.sellingPrice -
@@ -84,9 +106,11 @@ export class SaleService {
 
         quantity: item.quantity,
 
-        costPrice: product.costPrice,
+        costPrice:
+          product.costPrice,
 
-        sellingPrice: product.sellingPrice,
+        sellingPrice:
+          product.sellingPrice,
 
         subtotal,
 
@@ -98,43 +122,57 @@ export class SaleService {
 
         stock: product.stock,
 
-        quantity: item.quantity,
+        quantity:
+          item.quantity,
       });
     }
 
     let discountAmount = 0;
 
     if (
-      dto.discountType === 'PERCENTAGE'
+      dto.discountType ===
+      'PERCENTAGE'
     ) {
       discountAmount =
         (subtotalAmount *
-          (dto.discountValue || 0)) /
+          (dto.discountValue ||
+            0)) /
         100;
     }
 
-    if (dto.discountType === 'FIXED') {
+    if (
+      dto.discountType ===
+      'FIXED'
+    ) {
       discountAmount =
         dto.discountValue || 0;
     }
 
     const taxPercentage =
-      appSetting?.taxPercentage || 0;
+      appSetting?.taxPercentage ||
+      0;
 
     const afterDiscount =
-      subtotalAmount - discountAmount;
+      subtotalAmount -
+      discountAmount;
 
     const taxAmount =
-      (afterDiscount * taxPercentage) /
+      (afterDiscount *
+        taxPercentage) /
       100;
 
     const totalAmount =
-      afterDiscount + taxAmount;
+      afterDiscount +
+      taxAmount;
 
-    if (dto.paymentMethod === 'CASH') {
+    if (
+      dto.paymentMethod ===
+      'CASH'
+    ) {
       if (
         !dto.paidAmount ||
-        dto.paidAmount < totalAmount
+        dto.paidAmount <
+          totalAmount
       ) {
         throw new BadRequestException(
           'Uang pembayaran kurang',
@@ -143,25 +181,30 @@ export class SaleService {
     }
 
     const totalSalesToday =
-      await this.prisma.sale.count({
-        where: {
-          createdAt: {
-            gte: new Date(
-              new Date().setHours(
-                0,
-                0,
-                0,
-                0,
+      await this.prisma.sale.count(
+        {
+          where: {
+            createdAt: {
+              gte: new Date(
+                new Date().setHours(
+                  0,
+                  0,
+                  0,
+                  0,
+                ),
               ),
-            ),
+            },
           },
         },
-      });
+      );
 
     const invoiceNumber = `INV-${new Date()
       .toISOString()
       .slice(0, 10)
-      .replace(/-/g, '')}-${String(
+      .replace(
+        /-/g,
+        '',
+      )}-${String(
       totalSalesToday + 1,
     ).padStart(4, '0')}`;
 
@@ -169,90 +212,105 @@ export class SaleService {
       await this.prisma.$transaction(
         async (prisma) => {
           const createdSale =
-            await prisma.sale.create({
-              data: {
-                invoiceNumber,
+            await prisma.sale.create(
+              {
+                data: {
+                  invoiceNumber,
 
-                subtotalAmount,
+                  subtotalAmount,
 
-                discountType:
-                  dto.discountType,
+                  discountId:
+                    dto.discountId,
 
-                discountValue:
-                  dto.discountValue || 0,
+                  discountType:
+                    dto.discountType,
 
-                discountAmount,
+                  discountValue:
+                    dto.discountValue ||
+                    0,
 
-                taxAmount,
+                  discountAmount,
 
-                totalAmount,
+                  taxAmount,
 
-                totalProfit,
+                  totalAmount,
 
-                paymentMethod:
-                  dto.paymentMethod,
+                  totalProfit,
 
-                paymentStatus:
-                  dto.paymentMethod ===
-                  'CASH'
-                    ? 'PAID'
-                    : 'PENDING',
+                  paymentMethod:
+                    dto.paymentMethod,
 
-                paidAmount:
-                  dto.paidAmount,
+                  paymentStatus:
+                    dto.paymentMethod ===
+                    'CASH'
+                      ? 'PAID'
+                      : 'PENDING',
 
-                changeAmount:
-                  dto.paidAmount
-                    ? dto.paidAmount -
-                      totalAmount
-                    : 0,
+                  paidAmount:
+                    dto.paidAmount,
 
-                paymentProof:
-                  dto.paymentProof,
+                  changeAmount:
+                    dto.paidAmount
+                      ? dto.paidAmount -
+                        totalAmount
+                      : 0,
 
-                notes: dto.notes,
+                  paymentProof:
+                    dto.paymentProof,
 
-                customerId:
-                  dto.customerId,
+                  notes:
+                    dto.notes,
 
-                outletId:
-                  dto.outletId,
+                  customerId:
+                    dto.customerId,
 
-                cashierId,
+                  outletId:
+                    dto.outletId,
 
-                items: {
-                  create: saleItems,
+                  cashierId:
+                    dto.cashierId,
+
+                  items: {
+                    create:
+                      saleItems,
+                  },
+                },
+
+                include: {
+                  items: true,
+
+                  customer: true,
+
+                  cashier: true,
                 },
               },
+            );
 
-              include: {
-                items: true,
+          await prisma.salePayment.create(
+            {
+              data: {
+                saleId:
+                  createdSale.id,
 
-                customer: true,
+                method:
+                  dto.paymentMethod,
 
-                cashier: true,
+                amount:
+                  totalAmount,
               },
-            });
-
-          await prisma.salePayment.create({
-            data: {
-              saleId: createdSale.id,
-
-              method:
-                dto.paymentMethod,
-
-              amount: totalAmount,
             },
-          });
+          );
 
           for (const item of dto.items) {
             const snapshot =
               productSnapshots.find(
                 (p) =>
-                  p.id === item.productId,
+                  p.id ===
+                  item.productId,
               );
 
-            if (!snapshot) continue;
+            if (!snapshot)
+              continue;
 
             const beforeStock =
               snapshot.stock;
@@ -261,39 +319,40 @@ export class SaleService {
               beforeStock -
               item.quantity;
 
-            await prisma.product.update({
-              where: {
-                id: item.productId,
-              },
+            await prisma.product.update(
+              {
+                where: {
+                  id: item.productId,
+                },
 
-              data: {
-                stock: {
-                  decrement:
-                    item.quantity,
+                data: {
+                  stock: {
+                    decrement:
+                      item.quantity,
+                  },
                 },
               },
-            });
+            );
 
-            await prisma.stockMovement.create({
-              data: {
-                productId:
-                  item.productId,
+            await prisma.stockMovement.create(
+              {
+                data: {
+                  productId:
+                    item.productId,
 
-                type: 'SALE',
+                  type: 'SALE',
 
-                quantity:
-                  item.quantity,
+                  quantity:
+                    item.quantity,
 
-                beforeStock,
+                  beforeStock,
 
-                afterStock,
+                  afterStock,
 
-                note: `Sale ${invoiceNumber}`,
-
-                createdById:
-                  cashierId,
+                  note: `Sale ${invoiceNumber}`,
+                },
               },
-            });
+            );
           }
 
           await prisma.transactionHistory.create(
@@ -306,61 +365,49 @@ export class SaleService {
                   'CREATE_SALE',
 
                 description: `Transaction ${invoiceNumber} created`,
-
-                createdById:
-                  cashierId,
               },
             },
           );
 
-          await prisma.activityLog.create({
-            data: {
-              userId: cashierId,
-
-              action: 'CREATE',
-
-              entity: 'SALE',
-
-              entityId:
-                createdSale.id,
-
-              description: `Create sale ${invoiceNumber}`,
-            },
-          });
-
           if (dto.cartId) {
-            await prisma.cart.update({
-              where: {
-                id: dto.cartId,
-              },
+            await prisma.cart.update(
+              {
+                where: {
+                  id: dto.cartId,
+                },
 
-              data: {
-                status:
-                  'COMPLETED',
+                data: {
+                  status:
+                    'COMPLETED',
 
-                completedAt:
-                  new Date(),
+                  completedAt:
+                    new Date(),
+                },
               },
-            });
+            );
           }
 
           if (dto.customerId) {
             const points =
               Math.floor(
-                totalAmount / 10000,
+                totalAmount /
+                  10000,
               );
 
-            await prisma.customer.update({
-              where: {
-                id: dto.customerId,
-              },
+            await prisma.customer.update(
+              {
+                where: {
+                  id: dto.customerId,
+                },
 
-              data: {
-                points: {
-                  increment: points,
+                data: {
+                  points: {
+                    increment:
+                      points,
+                  },
                 },
               },
-            });
+            );
           }
 
           return createdSale;
@@ -387,6 +434,8 @@ export class SaleService {
         payments: true,
 
         histories: true,
+
+        discount: true,
 
         items: {
           include: {
@@ -420,6 +469,8 @@ export class SaleService {
           histories: true,
 
           returns: true,
+
+          discount: true,
 
           items: {
             include: {
@@ -481,7 +532,8 @@ export class SaleService {
               },
             );
 
-          if (!product) continue;
+          if (!product)
+            continue;
 
           const beforeStock =
             product.stock;
@@ -490,39 +542,44 @@ export class SaleService {
             beforeStock +
             item.quantity;
 
-          await prisma.product.update({
-            where: {
-              id: item.productId,
-            },
+          await prisma.product.update(
+            {
+              where: {
+                id: item.productId,
+              },
 
-            data: {
-              stock: {
-                increment:
-                  item.quantity,
+              data: {
+                stock: {
+                  increment:
+                    item.quantity,
+                },
               },
             },
-          });
+          );
 
-          await prisma.stockMovement.create({
-            data: {
-              productId:
-                item.productId,
+          await prisma.stockMovement.create(
+            {
+              data: {
+                productId:
+                  item.productId,
 
-              type: 'CANCEL',
+                type:
+                  'CANCEL',
 
-              quantity:
-                item.quantity,
+                quantity:
+                  item.quantity,
 
-              beforeStock,
+                beforeStock,
 
-              afterStock,
+                afterStock,
 
-              note: `Cancel transaction ${sale.invoiceNumber}`,
+                note: `Cancel transaction ${sale.invoiceNumber}`,
 
-              createdById:
-                userId,
+                createdById:
+                  userId,
+              },
             },
-          });
+          );
         }
 
         await prisma.sale.update({
@@ -553,7 +610,8 @@ export class SaleService {
               action:
                 'CANCEL_SALE',
 
-              description: reason,
+              description:
+                reason,
 
               createdById:
                 userId,
@@ -561,19 +619,24 @@ export class SaleService {
           },
         );
 
-        await prisma.activityLog.create({
-          data: {
-            userId,
+        await prisma.activityLog.create(
+          {
+            data: {
+              userId,
 
-            action: 'CANCEL',
+              action:
+                'CANCEL',
 
-            entity: 'SALE',
+              entity:
+                'SALE',
 
-            entityId: saleId,
+              entityId:
+                saleId,
 
-            description: `Cancel sale ${sale.invoiceNumber}`,
+              description: `Cancel sale ${sale.invoiceNumber}`,
+            },
           },
-        });
+        );
       },
     );
 

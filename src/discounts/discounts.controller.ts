@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -55,6 +56,25 @@ export class DiscountsController {
   @Get()
   findAll() {
     return this.discountsService.findAll();
+  }
+
+  @Get('active')
+  findActive() {
+    return this.discountsService.findActive();
+  }
+
+  @Get('validate')
+  validateDiscount(
+    @Query('code')
+    code: string,
+
+    @Query('subtotal')
+    subtotal: string,
+  ) {
+    return this.discountsService.validateDiscount(
+      code,
+      Number(subtotal),
+    );
   }
 
   @Get(':id')

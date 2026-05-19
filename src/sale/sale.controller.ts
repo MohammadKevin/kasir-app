@@ -18,7 +18,10 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @Controller('sales')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(
+  JwtAuthGuard,
+  RolesGuard,
+)
 export class SaleController {
   constructor(
     private readonly saleService: SaleService,
@@ -26,14 +29,11 @@ export class SaleController {
 
   @Post()
   create(
-    @Body() dto: CreateSaleDto,
-
-    @Req() req,
+    @Body()
+    dto: CreateSaleDto,
   ) {
     return this.saleService.create(
       dto,
-
-      req.user.id,
     );
   }
 
@@ -43,17 +43,25 @@ export class SaleController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.saleService.findOne(id);
+  findOne(
+    @Param('id')
+    id: string,
+  ) {
+    return this.saleService.findOne(
+      id,
+    );
   }
 
   @Patch(':id/cancel')
   cancelSale(
-    @Param('id') id: string,
+    @Param('id')
+    id: string,
 
-    @Body() dto: CancelSaleDto,
+    @Body()
+    dto: CancelSaleDto,
 
-    @Req() req,
+    @Req()
+    req,
   ) {
     return this.saleService.cancelSale(
       id,

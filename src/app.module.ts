@@ -25,6 +25,9 @@ import { ReturnsModule } from './returns/returns.module';
 import { CashierShiftsModule } from './cashier-shifts/cashier-shifts.module';
 import { SettingsModule } from './settings/settings.module';
 import { DiscountsModule } from './discounts/discounts.module';
+import { CashiersService } from './cashiers/cashiers.service';
+import { CashiersController } from './cashiers/cashiers.controller';
+import { CashiersModule } from './cashiers/cashiers.module';
 
 @Module({
   imports: [
@@ -88,8 +91,10 @@ import { DiscountsModule } from './discounts/discounts.module';
     SettingsModule,
 
     DiscountsModule,
+
+    CashiersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, CashiersController],
+  providers: [AppService, CashiersService],
 })
 export class AppModule {}

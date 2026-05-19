@@ -6,13 +6,8 @@ import {
 
 import { PrismaService } from 'src/prisma/prisma.service';
 
-import {
-  CreateDiscountDto,
-} from './dto/create-discount.dto';
-
-import {
-  UpdateDiscountDto,
-} from './dto/update-discount.dto';
+import { CreateDiscountDto } from './dto/create-discount.dto';
+import { UpdateDiscountDto } from './dto/update-discount.dto';
 
 @Injectable()
 export class DiscountsService {
@@ -24,15 +19,19 @@ export class DiscountsService {
     dto: CreateDiscountDto,
     userId: string,
   ) {
-    if (
-      dto.startDate &&
-      dto.endDate &&
-      new Date(dto.startDate) >
-        new Date(dto.endDate)
-    ) {
-      throw new BadRequestException(
-        'Tanggal tidak valid',
-      );
+    if (dto.code) {
+      const existingDiscount =
+        await this.prisma.discount.findFirst({
+          where: {
+            code: dto.code,
+          },
+        });
+
+      if (existingDiscount) {
+        throw new BadRequestException(
+          'Code discount sudah digunakan',
+        );
+      }
     }
 
     const discount =
@@ -46,23 +45,28 @@ export class DiscountsService {
 
           value: dto.value,
 
-          minPurchase: dto.minPurchase,
+          minPurchase:
+            dto.minPurchase,
 
-          maxDiscount: dto.maxDiscount,
+          maxDiscount:
+            dto.maxDiscount,
 
           startDate: dto.startDate
-            ? new Date(dto.startDate)
+            ? new Date(
+                dto.startDate,
+              )
             : null,
 
           endDate: dto.endDate
-            ? new Date(dto.endDate)
+            ? new Date(
+                dto.endDate,
+              )
             : null,
 
           isActive:
-            dto.isActive ?? true,
+            dto.isActive,
 
-          scope:
-            dto.scope || 'GLOBAL',
+          scope: dto.scope,
 
           createdById: userId,
         },
@@ -82,7 +86,9 @@ export class DiscountsService {
         createdBy: {
           select: {
             id: true,
+
             name: true,
+
             email: true,
           },
         },
@@ -94,13 +100,65 @@ export class DiscountsService {
     });
   }
 
+  async findActive() {
+    const now = new Date();
+
+    return this.prisma.discount.findMany({
+      where: {
+        isActive: true,
+
+        OR: [
+          {
+            startDate: null,
+          },
+
+          {
+            startDate: {
+              lte: now,
+            },
+          },
+        ],
+
+        AND: [
+          {
+            OR: [
+              {
+                endDate: null,
+              },
+
+              {
+                endDate: {
+                  gte: now,
+                },
+              },
+            ],
+          },
+        ],
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   async findOne(id: string) {
     const discount =
       await this.prisma.discount.findUnique({
-        where: { id },
+        where: {
+          id,
+        },
 
         include: {
-          createdBy: true,
+          createdBy: {
+            select: {
+              id: true,
+
+              name: true,
+
+              email: true,
+            },
+          },
         },
       });
 
@@ -119,7 +177,9 @@ export class DiscountsService {
   ) {
     const discount =
       await this.prisma.discount.findUnique({
-        where: { id },
+        where: {
+          id,
+        },
       });
 
     if (!discount) {
@@ -128,34 +188,76 @@ export class DiscountsService {
       );
     }
 
+    if (
+      dto.code &&
+      dto.code !== discount.code
+    ) {
+      const existingDiscount =
+        await this.prisma.discount.findFirst({
+          where: {
+            code: dto.code,
+          },
+        });
+
+      if (existingDiscount) {
+        throw new BadRequestException(
+          'Code discount sudah digunakan',
+        );
+      }
+    }
+
     const updatedDiscount =
       await this.prisma.discount.update({
-        where: { id },
+        where: {
+          id,
+        },
 
         data: {
-          name: dto.name,
+          name:
+            dto.name ??
+            discount.name,
 
-          code: dto.code,
+          code:
+            dto.code ??
+            discount.code,
 
-          type: dto.type,
+          type:
+            dto.type ??
+            discount.type,
 
-          value: dto.value,
+          value:
+            dto.value ??
+            discount.value,
 
-          minPurchase: dto.minPurchase,
+          minPurchase:
+            dto.minPurchase ??
+            discount.minPurchase,
 
-          maxDiscount: dto.maxDiscount,
+          maxDiscount:
+            dto.maxDiscount ??
+            discount.maxDiscount,
 
-          startDate: dto.startDate
-            ? new Date(dto.startDate)
-            : undefined,
+          startDate:
+            dto.startDate
+              ? new Date(
+                  dto.startDate,
+                )
+              : discount.startDate,
 
-          endDate: dto.endDate
-            ? new Date(dto.endDate)
-            : undefined,
+          endDate:
+            dto.endDate
+              ? new Date(
+                  dto.endDate,
+                )
+              : discount.endDate,
 
-          isActive: dto.isActive,
+          isActive:
+            dto.isActive ??
+            discount.isActive,
 
-          scope: dto.scope,
+          scope:
+            dto.scope ??
+            discount.scope,
         },
       });
 
@@ -170,7 +272,9 @@ export class DiscountsService {
   async remove(id: string) {
     const discount =
       await this.prisma.discount.findUnique({
-        where: { id },
+        where: {
+          id,
+        },
       });
 
     if (!discount) {
@@ -180,12 +284,110 @@ export class DiscountsService {
     }
 
     await this.prisma.discount.delete({
-      where: { id },
+      where: {
+        id,
+      },
     });
 
     return {
       message:
         'Discount berhasil dihapus',
+    };
+  }
+
+  async validateDiscount(
+    code: string,
+    subtotal: number,
+  ) {
+    const now = new Date();
+
+    const discount =
+      await this.prisma.discount.findFirst({
+        where: {
+          code,
+
+          isActive: true,
+
+          OR: [
+            {
+              startDate: null,
+            },
+
+            {
+              startDate: {
+                lte: now,
+              },
+            },
+          ],
+
+          AND: [
+            {
+              OR: [
+                {
+                  endDate: null,
+                },
+
+                {
+                  endDate: {
+                    gte: now,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+    if (!discount) {
+      throw new BadRequestException(
+        'Discount tidak valid',
+      );
+    }
+
+    if (
+      discount.minPurchase &&
+      subtotal <
+        discount.minPurchase
+    ) {
+      throw new BadRequestException(
+        `Minimal pembelian Rp ${discount.minPurchase}`,
+      );
+    }
+
+    let discountAmount = 0;
+
+    if (
+      discount.type ===
+      'PERCENTAGE'
+    ) {
+      discountAmount =
+        (subtotal *
+          discount.value) /
+        100;
+    }
+
+    if (
+      discount.type === 'FIXED'
+    ) {
+      discountAmount =
+        discount.value;
+    }
+
+    if (
+      discount.maxDiscount &&
+      discountAmount >
+        discount.maxDiscount
+    ) {
+      discountAmount =
+        discount.maxDiscount;
+    }
+
+    return {
+      valid: true,
+
+      discount,
+
+      discountAmount,
     };
   }
 }

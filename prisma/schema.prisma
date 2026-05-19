@@ -10,7 +10,6 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   ADMIN
-  CASHIER
 }
 
 enum ExpenseType {
@@ -103,6 +102,8 @@ model Outlet {
   updatedAt       DateTime @updatedAt
 
   users           User[]
+  cashiers        Cashier[]
+
   products        Product[]
   sales           Sale[]
   expenses        Expense[]
@@ -120,7 +121,7 @@ model User {
 
   password          String
 
-  role              Role @default(CASHIER)
+  role              Role @default(ADMIN)
 
   isActive          Boolean @default(true)
 
@@ -134,11 +135,7 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  sales             Sale[] @relation("CashierSales")
-
   cancelledSales    Sale[] @relation("CancelledBy")
-
-  shifts            CashierShift[]
 
   stockMovements    StockMovement[]
 
@@ -146,9 +143,30 @@ model User {
 
   histories         TransactionHistory[]
 
-  carts             Cart[]
-
   discounts         Discount[]
+}
+
+model Cashier {
+  id              String   @id @default(uuid())
+
+  name            String
+
+  pin             String?
+
+  isActive        Boolean @default(true)
+
+  outletId        String
+
+  outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  sales           Sale[]
+
+  carts           Cart[]
+
+  shifts          CashierShift[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Category {
@@ -310,7 +328,7 @@ model Sale {
 
   outlet            Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  cashier           User @relation("CashierSales", fields: [cashierId], references: [id], onDelete: Cascade)
+  cashier           Cashier @relation(fields: [cashierId], references: [id], onDelete: Cascade)
 
   cancelledBy       User? @relation("CancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
 
@@ -459,7 +477,7 @@ model Cart {
 
   outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
-  cashier         User @relation(fields: [cashierId], references: [id], onDelete: Cascade)
+  cashier         Cashier @relation(fields: [cashierId], references: [id], onDelete: Cascade)
 
   customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
@@ -502,7 +520,7 @@ model CashierShift {
 
   status          ShiftStatus @default(OPEN)
 
-  cashier         User @relation(fields: [cashierId], references: [id], onDelete: Cascade)
+  cashier         Cashier @relation(fields: [cashierId], references: [id], onDelete: Cascade)
 
   outlet          Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
 

@@ -1,5 +1,3 @@
-// sale/dto/create-sale.dto.ts
-
 import {
   ArrayMinSize,
   IsArray,
@@ -24,6 +22,9 @@ export class CreateSaleDto {
   @IsString()
   outletId!: string;
 
+  @IsString()
+  cashierId!: string;
+
   @IsOptional()
   @IsString()
   customerId?: string;
@@ -31,6 +32,10 @@ export class CreateSaleDto {
   @IsOptional()
   @IsString()
   cartId?: string;
+
+  @IsOptional()
+  @IsString()
+  discountId?: string;
 
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethod;
