@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,9 +10,13 @@ import { CreatePurchaseDto } from './dto/create-purchase.dto';
 
 @Injectable()
 export class PurchasesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+  ) {}
 
-  async create(dto: CreatePurchaseDto) {
+  async create(
+    dto: CreatePurchaseDto,
+  ) {
     const supplier =
       await this.prisma.supplier.findUnique({
         where: {
@@ -40,29 +45,12 @@ export class PurchasesService {
 
     let totalAmount = 0;
 
-    for (const item of dto.items) {
-      totalAmount += item.quantity * item.costPrice;
-    }
-
-    const purchaseCount =
-      await this.prisma.purchase.count();
-
-    const purchase =
-      await this.prisma.purchase.create({
-        data: {
-          invoiceNumber: `PUR-${String(
-            purchaseCount + 1,
-          ).padStart(5, '0')}`,
-
-          supplierId: dto.supplierId,
-
-          outletId: dto.outletId,
-
-          totalAmount,
-
-          notes: dto.notes,
-        },
-      });
+    const productSnapshots: {
+      id: string;
+      stock: number;
+      quantity: number;
+      costPrice: number;
+    }[] = [];
 
     for (const item of dto.items) {
       const product =
@@ -78,63 +66,165 @@ export class PurchasesService {
         );
       }
 
-      const subtotal =
-        item.quantity * item.costPrice;
+      if (!product.isActive) {
+        throw new BadRequestException(
+          `Product ${product.name} tidak aktif`,
+        );
+      }
 
-      await this.prisma.purchaseItem.create({
-        data: {
-          purchaseId: purchase.id,
+      if (
+        product.outletId !==
+        dto.outletId
+      ) {
+        throw new BadRequestException(
+          `Product ${product.name} bukan milik outlet ini`,
+        );
+      }
 
-          productId: item.productId,
+      totalAmount +=
+        item.quantity *
+        item.costPrice;
 
-          quantity: item.quantity,
+      productSnapshots.push({
+        id: product.id,
 
-          costPrice: item.costPrice,
+        stock: product.stock,
 
-          subtotal,
-        },
-      });
+        quantity:
+          item.quantity,
 
-      const beforeStock = product.stock;
-
-      const afterStock =
-        beforeStock + item.quantity;
-
-      await this.prisma.product.update({
-        where: {
-          id: item.productId,
-        },
-
-        data: {
-          stock: afterStock,
-          costPrice: item.costPrice,
-        },
-      });
-
-      await this.prisma.stockMovement.create({
-        data: {
-          productId: item.productId,
-
-          type: 'IN',
-
-          quantity: item.quantity,
-
-          beforeStock,
-
-          afterStock,
-
-          note: `Restock purchase ${purchase.invoiceNumber}`,
-        },
+        costPrice:
+          item.costPrice,
       });
     }
 
-    return this.findOne(purchase.id);
+    const invoiceNumber = `PUR-${Date.now()}`;
+
+    const purchase =
+      await this.prisma.$transaction(
+        async (prisma) => {
+          const createdPurchase =
+            await prisma.purchase.create({
+              data: {
+                invoiceNumber,
+
+                supplierId:
+                  dto.supplierId,
+
+                outletId:
+                  dto.outletId,
+
+                totalAmount,
+
+                notes:
+                  dto.notes,
+
+                items: {
+                  create:
+                    dto.items.map(
+                      (
+                        item,
+                      ) => ({
+                        productId:
+                          item.productId,
+
+                        quantity:
+                          item.quantity,
+
+                        costPrice:
+                          item.costPrice,
+
+                        subtotal:
+                          item.quantity *
+                          item.costPrice,
+                      }),
+                    ),
+                },
+              },
+
+              include: {
+                supplier: true,
+
+                outlet: true,
+
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            });
+
+          for (const item of dto.items) {
+            const snapshot =
+              productSnapshots.find(
+                (p) =>
+                  p.id ===
+                  item.productId,
+              );
+
+            if (!snapshot)
+              continue;
+
+            const beforeStock =
+              snapshot.stock;
+
+            const afterStock =
+              beforeStock +
+              item.quantity;
+
+            await prisma.product.update({
+              where: {
+                id: item.productId,
+              },
+
+              data: {
+                stock: {
+                  increment:
+                    item.quantity,
+                },
+
+                costPrice:
+                  item.costPrice,
+              },
+            });
+
+            await prisma.stockMovement.create({
+              data: {
+                productId:
+                  item.productId,
+
+                type: 'IN',
+
+                quantity:
+                  item.quantity,
+
+                beforeStock,
+
+                afterStock,
+
+                note: `Restock purchase ${invoiceNumber}`,
+              },
+            });
+          }
+
+          return createdPurchase;
+        },
+      );
+
+    return {
+      message:
+        'Purchase berhasil dibuat',
+
+      data: purchase,
+    };
   }
 
   async findAll() {
     return this.prisma.purchase.findMany({
       include: {
         supplier: true,
+
         outlet: true,
 
         items: {
@@ -159,6 +249,7 @@ export class PurchasesService {
 
         include: {
           supplier: true,
+
           outlet: true,
 
           items: {
@@ -196,56 +287,80 @@ export class PurchasesService {
       );
     }
 
-    for (const item of purchase.items) {
-      const product =
-        await this.prisma.product.findUnique({
+    await this.prisma.$transaction(
+      async (prisma) => {
+        for (const item of purchase.items) {
+          const product =
+            await prisma.product.findUnique(
+              {
+                where: {
+                  id: item.productId,
+                },
+              },
+            );
+
+          if (!product)
+            continue;
+
+          if (
+            product.stock <
+            item.quantity
+          ) {
+            throw new BadRequestException(
+              `Stock ${product.name} tidak cukup untuk rollback purchase`,
+            );
+          }
+
+          const beforeStock =
+            product.stock;
+
+          const afterStock =
+            beforeStock -
+            item.quantity;
+
+          await prisma.product.update({
+            where: {
+              id: item.productId,
+            },
+
+            data: {
+              stock: {
+                decrement:
+                  item.quantity,
+              },
+            },
+          });
+
+          await prisma.stockMovement.create({
+            data: {
+              productId:
+                item.productId,
+
+              type: 'OUT',
+
+              quantity:
+                item.quantity,
+
+              beforeStock,
+
+              afterStock,
+
+              note: `Delete purchase ${purchase.invoiceNumber}`,
+            },
+          });
+        }
+
+        await prisma.purchase.delete({
           where: {
-            id: item.productId,
+            id,
           },
         });
-
-      if (product) {
-        const beforeStock = product.stock;
-
-        const afterStock =
-          beforeStock - item.quantity;
-
-        await this.prisma.product.update({
-          where: {
-            id: item.productId,
-          },
-
-          data: {
-            stock: afterStock,
-          },
-        });
-
-        await this.prisma.stockMovement.create({
-          data: {
-            productId: item.productId,
-
-            type: 'OUT',
-
-            quantity: item.quantity,
-
-            beforeStock,
-
-            afterStock,
-
-            note: `Delete purchase ${purchase.invoiceNumber}`,
-          },
-        });
-      }
-    }
-
-    await this.prisma.purchase.delete({
-      where: {
-        id,
       },
-    });
+    );
 
     return {
-      message: 'Purchase berhasil dihapus',
+      message:
+        'Purchase berhasil dihapus',
     };
   }
 }

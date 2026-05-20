@@ -14,9 +14,9 @@ import { UpdateOutletDto } from './dto/update-outlet.dto';
 @Injectable()
 export class OutletService {
   constructor(
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
 
-    private cloudinaryService: CloudinaryService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(
@@ -74,13 +74,28 @@ export class OutletService {
       },
 
       include: {
-        users: true,
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+
+        cashiers: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+          },
+        },
 
         _count: {
           select: {
             products: true,
-
             sales: true,
+            cashiers: true,
           },
         },
       },
@@ -99,9 +114,26 @@ export class OutletService {
         },
 
         include: {
-          users: true,
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
 
-          products: true,
+          cashiers: {
+            orderBy: {
+              name: 'asc',
+            },
+          },
+
+          products: {
+            where: {
+              isActive: true,
+            },
+          },
 
           sales: {
             take: 10,
@@ -111,9 +143,27 @@ export class OutletService {
             },
           },
 
-          expenses: true,
+          expenses: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
 
-          shifts: true,
+          shifts: {
+            take: 10,
+
+            orderBy: {
+              openedAt: 'desc',
+            },
+          },
+
+          _count: {
+            select: {
+              products: true,
+              sales: true,
+              cashiers: true,
+            },
+          },
         },
       });
 
@@ -200,6 +250,8 @@ export class OutletService {
           products: true,
 
           users: true,
+
+          cashiers: true,
         },
       });
 
@@ -209,7 +261,9 @@ export class OutletService {
       );
     }
 
-    if (outlet.sales.length > 0) {
+    if (
+      outlet.sales.length > 0
+    ) {
       throw new BadRequestException(
         'Outlet memiliki transaksi dan tidak bisa dihapus',
       );

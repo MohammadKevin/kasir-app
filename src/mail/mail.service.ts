@@ -4,6 +4,9 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
+  sendMail(arg0: { to: string; subject: string; html: string; }) {
+    throw new Error('Method not implemented.');
+  }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   private transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',

@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
+
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -14,18 +16,22 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
+
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(
     dto: CreateProductDto,
+
     file?: Express.Multer.File,
   ) {
     const existingProduct =
       await this.prisma.product.findFirst({
         where: {
           name: dto.name,
-          outletId: dto.outletId,
+
+          outletId:
+            dto.outletId,
         },
       });
 
@@ -50,13 +56,11 @@ export class ProductService {
 
     if (dto.categoryId) {
       const category =
-        await this.prisma.category.findUnique(
-          {
-            where: {
-              id: dto.categoryId,
-            },
+        await this.prisma.category.findUnique({
+          where: {
+            id: dto.categoryId,
           },
-        );
+        });
 
       if (!category) {
         throw new NotFoundException(
@@ -84,7 +88,8 @@ export class ProductService {
       const existingBarcode =
         await this.prisma.product.findFirst({
           where: {
-            barcode: dto.barcode,
+            barcode:
+              dto.barcode,
           },
         });
 
@@ -95,7 +100,9 @@ export class ProductService {
       }
     }
 
-    let imageUrl: string | undefined;
+    let imageUrl:
+      | string
+      | undefined;
 
     if (file) {
       imageUrl =
@@ -129,7 +136,8 @@ export class ProductService {
                   dto.barcode ||
                   generatedBarcode,
 
-                stock: dto.stock,
+                stock:
+                  dto.stock,
 
                 minStock:
                   dto.minStock,
@@ -147,25 +155,32 @@ export class ProductService {
                   dto.outletId,
 
                 imageUrl,
+
+                isActive: true,
               },
             });
 
-          await prisma.stockMovement.create({
-            data: {
-              productId:
-                createdProduct.id,
+          if (dto.stock > 0) {
+            await prisma.stockMovement.create({
+              data: {
+                productId:
+                  createdProduct.id,
 
-              type: 'IN',
+                type: 'IN',
 
-              quantity: dto.stock,
+                quantity:
+                  dto.stock,
 
-              beforeStock: 0,
+                beforeStock: 0,
 
-              afterStock: dto.stock,
+                afterStock:
+                  dto.stock,
 
-              note: 'Initial stock',
-            },
-          });
+                note:
+                  'Initial stock',
+              },
+            });
+          }
 
           return createdProduct;
         },
@@ -211,7 +226,8 @@ export class ProductService {
 
           stockMovements: {
             orderBy: {
-              createdAt: 'desc',
+              createdAt:
+                'desc',
             },
 
             take: 20,
@@ -241,6 +257,8 @@ export class ProductService {
 
         include: {
           category: true,
+
+          outlet: true,
         },
       });
 
@@ -254,29 +272,34 @@ export class ProductService {
   }
 
   async findLowStock() {
-    const products =
-      await this.prisma.product.findMany({
-        where: {
-          isActive: true,
+    return this.prisma.product.findMany({
+      where: {
+        isActive: true,
+
+        stock: {
+          lte:
+            this.prisma.product.fields
+              .minStock,
         },
+      },
 
-        include: {
-          category: true,
+      include: {
+        category: true,
 
-          outlet: true,
-        },
-      });
+        outlet: true,
+      },
 
-    return products.filter(
-      (product) =>
-        product.stock <=
-        product.minStock,
-    );
+      orderBy: {
+        stock: 'asc',
+      },
+    });
   }
 
   async update(
     id: string,
+
     dto: UpdateProductDto,
+
     file?: Express.Multer.File,
   ) {
     const product =
@@ -294,13 +317,11 @@ export class ProductService {
 
     if (dto.categoryId) {
       const category =
-        await this.prisma.category.findUnique(
-          {
-            where: {
-              id: dto.categoryId,
-            },
+        await this.prisma.category.findUnique({
+          where: {
+            id: dto.categoryId,
           },
-        );
+        });
 
       if (!category) {
         throw new NotFoundException(
@@ -332,7 +353,8 @@ export class ProductService {
       const existingBarcode =
         await this.prisma.product.findFirst({
           where: {
-            barcode: dto.barcode,
+            barcode:
+              dto.barcode,
 
             NOT: {
               id,
@@ -361,20 +383,27 @@ export class ProductService {
       await this.prisma.$transaction(
         async (prisma) => {
           if (
-            dto.stock !== undefined &&
-            dto.stock !== product.stock
+            dto.stock !==
+              undefined &&
+            dto.stock !==
+              product.stock
           ) {
+            const adjustment =
+              dto.stock -
+              product.stock;
+
             await prisma.stockMovement.create({
               data: {
                 productId:
                   product.id,
 
-                type: 'ADJUSTMENT',
+                type:
+                  'ADJUSTMENT',
 
-                quantity: Math.abs(
-                  dto.stock -
-                    product.stock,
-                ),
+                quantity:
+                  Math.abs(
+                    adjustment,
+                  ),
 
                 beforeStock:
                   product.stock,
@@ -383,7 +412,9 @@ export class ProductService {
                   dto.stock,
 
                 note:
-                  'Manual stock adjustment',
+                  adjustment > 0
+                    ? 'Tambah stock manual'
+                    : 'Kurangi stock manual',
               },
             });
           }
@@ -427,6 +458,10 @@ export class ProductService {
                 product.categoryId,
 
               imageUrl,
+
+              isActive:
+                dto.isActive ??
+                product.isActive,
             },
           });
         },
@@ -446,6 +481,12 @@ export class ProductService {
         where: {
           id,
         },
+
+        include: {
+          saleItems: {
+            take: 1,
+          },
+        },
       });
 
     if (!product) {
@@ -454,7 +495,10 @@ export class ProductService {
       );
     }
 
-    try {
+    if (
+      product.saleItems
+        .length > 0
+    ) {
       await this.prisma.product.update({
         where: {
           id,
@@ -462,6 +506,19 @@ export class ProductService {
 
         data: {
           isActive: false,
+        },
+      });
+
+      return {
+        message:
+          'Produk berhasil dinonaktifkan',
+      };
+    }
+
+    try {
+      await this.prisma.product.delete({
+        where: {
+          id,
         },
       });
 

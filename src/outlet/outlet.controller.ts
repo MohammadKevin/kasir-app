@@ -27,7 +27,10 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('outlets')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(
+  JwtAuthGuard,
+  RolesGuard,
+)
 export class OutletController {
   constructor(
     private readonly outletService: OutletService,
@@ -38,7 +41,7 @@ export class OutletController {
   @UseInterceptors(
     FileInterceptor('qrisImage'),
   )
-  create(
+  async create(
     @Body()
     dto: CreateOutletDto,
 
@@ -56,7 +59,7 @@ export class OutletController {
     Role.SUPER_ADMIN,
     Role.ADMIN,
   )
-  findAll() {
+  async findAll() {
     return this.outletService.findAll();
   }
 
@@ -65,7 +68,7 @@ export class OutletController {
     Role.SUPER_ADMIN,
     Role.ADMIN,
   )
-  findOne(
+  async findOne(
     @Param('id')
     id: string,
   ) {
@@ -79,7 +82,7 @@ export class OutletController {
   @UseInterceptors(
     FileInterceptor('qrisImage'),
   )
-  update(
+  async update(
     @Param('id')
     id: string,
 
@@ -98,7 +101,7 @@ export class OutletController {
 
   @Delete(':id')
   @Roles(Role.SUPER_ADMIN)
-  remove(
+  async remove(
     @Param('id')
     id: string,
   ) {

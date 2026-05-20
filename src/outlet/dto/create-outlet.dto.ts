@@ -1,4 +1,8 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateOutletDto {
   @IsString()
@@ -12,8 +16,4 @@ export class CreateOutletDto {
   @IsOptional()
   @IsString()
   noTelp?: string;
-
-  @IsOptional()
-  @IsString()
-  qrisImage?: string; 
 }

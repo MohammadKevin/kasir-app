@@ -1,18 +1,21 @@
 import {
   IsBoolean,
+  IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
 
 export class CreateCashierDto {
   @IsString()
+  @IsNotEmpty()
   name!: string;
 
-  @IsOptional()
   @IsString()
-  pin?: string;
+  @IsNotEmpty()
+  pin!: string;
 
   @IsString()
+  @IsNotEmpty()
   outletId!: string;
 
   @IsOptional()

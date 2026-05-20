@@ -10,7 +10,9 @@ import { CreateReturnDto } from './dto/create-return.dto';
 
 @Injectable()
 export class ReturnsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
   async create(
     dto: CreateReturnDto,
@@ -24,6 +26,12 @@ export class ReturnsService {
 
         include: {
           items: true,
+
+          returns: {
+            include: {
+              items: true,
+            },
+          },
         },
       });
 
@@ -45,10 +53,12 @@ export class ReturnsService {
     let totalRefund = 0;
 
     for (const item of dto.items) {
-      const saleItem = sale.items.find(
-        (i) =>
-          i.productId === item.productId,
-      );
+      const saleItem =
+        sale.items.find(
+          (i) =>
+            i.productId ===
+            item.productId,
+        );
 
       if (!saleItem) {
         throw new BadRequestException(
@@ -56,13 +66,39 @@ export class ReturnsService {
         );
       }
 
-      if (item.quantity > saleItem.quantity) {
+      const totalReturned =
+        sale.returns
+          .flatMap(
+            (returnData) =>
+              returnData.items,
+          )
+          .filter(
+            (returnItem) =>
+              returnItem.productId ===
+              item.productId,
+          )
+          .reduce(
+            (total, current) =>
+              total +
+              current.quantity,
+            0,
+          );
+
+      const availableQty =
+        saleItem.quantity -
+        totalReturned;
+
+      if (
+        item.quantity >
+        availableQty
+      ) {
         throw new BadRequestException(
-          'Quantity return melebihi pembelian',
+          `Quantity return melebihi pembelian. Maksimal return ${availableQty}`,
         );
       }
 
-      totalRefund += item.subtotal;
+      totalRefund +=
+        item.subtotal;
     }
 
     const returnTransaction =
@@ -72,30 +108,41 @@ export class ReturnsService {
             await prisma.returnTransaction.create(
               {
                 data: {
-                  saleId: dto.saleId,
+                  saleId:
+                    dto.saleId,
 
-                  reason: dto.reason,
+                  reason:
+                    dto.reason,
 
                   totalRefund,
 
                   items: {
-                    create: dto.items.map(
-                      (item) => ({
-                        productId:
-                          item.productId,
+                    create:
+                      dto.items.map(
+                        (
+                          item,
+                        ) => ({
+                          productId:
+                            item.productId,
 
-                        quantity:
-                          item.quantity,
+                          quantity:
+                            item.quantity,
 
-                        subtotal:
-                          item.subtotal,
-                      }),
-                    ),
+                          subtotal:
+                            item.subtotal,
+                        }),
+                      ),
                   },
                 },
 
                 include: {
-                  items: true,
+                  sale: true,
+
+                  items: {
+                    include: {
+                      product: true,
+                    },
+                  },
                 },
               },
             );
@@ -110,7 +157,9 @@ export class ReturnsService {
                 },
               );
 
-            if (!product) continue;
+            if (!product) {
+              continue;
+            }
 
             const beforeStock =
               product.stock;
@@ -119,45 +168,51 @@ export class ReturnsService {
               beforeStock +
               item.quantity;
 
-            await prisma.product.update({
-              where: {
-                id: item.productId,
-              },
+            await prisma.product.update(
+              {
+                where: {
+                  id: item.productId,
+                },
 
-              data: {
-                stock: {
-                  increment:
-                    item.quantity,
+                data: {
+                  stock: {
+                    increment:
+                      item.quantity,
+                  },
                 },
               },
-            });
+            );
 
-            await prisma.stockMovement.create({
-              data: {
-                productId:
-                  item.productId,
+            await prisma.stockMovement.create(
+              {
+                data: {
+                  productId:
+                    item.productId,
 
-                type: 'RETURN',
+                  type:
+                    'RETURN',
 
-                quantity:
-                  item.quantity,
+                  quantity:
+                    item.quantity,
 
-                beforeStock,
+                  beforeStock,
 
-                afterStock,
+                  afterStock,
 
-                note: `Return transaction ${sale.invoiceNumber}`,
+                  note: `Return transaction ${sale.invoiceNumber}`,
 
-                createdById:
-                  userId,
+                  createdById:
+                    userId,
+                },
               },
-            });
+            );
           }
 
           await prisma.transactionHistory.create(
             {
               data: {
-                saleId: sale.id,
+                saleId:
+                  sale.id,
 
                 action:
                   'RETURN_TRANSACTION',
@@ -172,19 +227,24 @@ export class ReturnsService {
             },
           );
 
-          await prisma.activityLog.create({
-            data: {
-              userId,
+          await prisma.activityLog.create(
+            {
+              data: {
+                userId,
 
-              action: 'RETURN',
+                action:
+                  'RETURN',
 
-              entity: 'SALE',
+                entity:
+                  'SALE',
 
-              entityId: sale.id,
+                entityId:
+                  sale.id,
 
-              description: `Return transaction ${sale.invoiceNumber}`,
+                description: `Return transaction ${sale.invoiceNumber}`,
+              },
             },
-          });
+          );
 
           return createdReturn;
         },
@@ -202,7 +262,13 @@ export class ReturnsService {
     return this.prisma.returnTransaction.findMany(
       {
         include: {
-          sale: true,
+          sale: {
+            include: {
+              cashier: true,
+
+              customer: true,
+            },
+          },
 
           items: {
             include: {
@@ -212,7 +278,8 @@ export class ReturnsService {
         },
 
         orderBy: {
-          createdAt: 'desc',
+          createdAt:
+            'desc',
         },
       },
     );
@@ -227,7 +294,15 @@ export class ReturnsService {
           },
 
           include: {
-            sale: true,
+            sale: {
+              include: {
+                cashier: true,
+
+                customer: true,
+
+                outlet: true,
+              },
+            },
 
             items: {
               include: {
@@ -245,5 +320,155 @@ export class ReturnsService {
     }
 
     return data;
+  }
+
+  async remove(
+    id: string,
+    userId: string,
+  ) {
+    const returnData =
+      await this.prisma.returnTransaction.findUnique(
+        {
+          where: {
+            id,
+          },
+
+          include: {
+            sale: true,
+
+            items: true,
+          },
+        },
+      );
+
+    if (!returnData) {
+      throw new NotFoundException(
+        'Return tidak ditemukan',
+      );
+    }
+
+    await this.prisma.$transaction(
+      async (prisma) => {
+        for (const item of returnData.items) {
+          const product =
+            await prisma.product.findUnique(
+              {
+                where: {
+                  id: item.productId,
+                },
+              },
+            );
+
+          if (!product) {
+            continue;
+          }
+
+          const beforeStock =
+            product.stock;
+
+          const afterStock =
+            beforeStock -
+            item.quantity;
+
+          await prisma.product.update(
+            {
+              where: {
+                id: item.productId,
+              },
+
+              data: {
+                stock: {
+                  decrement:
+                    item.quantity,
+                },
+              },
+            },
+          );
+
+          await prisma.stockMovement.create(
+            {
+              data: {
+                productId:
+                  item.productId,
+
+                type:
+                  'OUT',
+
+                quantity:
+                  item.quantity,
+
+                beforeStock,
+
+                afterStock,
+
+                note: `Delete return ${returnData.sale.invoiceNumber}`,
+
+                createdById:
+                  userId,
+              },
+            },
+          );
+        }
+
+        await prisma.returnItem.deleteMany(
+          {
+            where: {
+              returnId:
+                returnData.id,
+            },
+          },
+        );
+
+        await prisma.returnTransaction.delete(
+          {
+            where: {
+              id:
+                returnData.id,
+            },
+          },
+        );
+
+        await prisma.transactionHistory.create(
+          {
+            data: {
+              saleId:
+                returnData.saleId,
+
+              action:
+                'DELETE_RETURN',
+
+              description: `Delete return ${returnData.sale.invoiceNumber}`,
+
+              createdById:
+                userId,
+            },
+          },
+        );
+
+        await prisma.activityLog.create(
+          {
+            data: {
+              userId,
+
+              action:
+                'DELETE',
+
+              entity:
+                'RETURN',
+
+              entityId:
+                returnData.id,
+
+              description: `Delete return ${returnData.sale.invoiceNumber}`,
+            },
+          },
+        );
+      },
+    );
+
+    return {
+      message:
+        'Return berhasil dihapus',
+    };
   }
 }

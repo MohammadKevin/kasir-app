@@ -19,11 +19,36 @@ export class DiscountsService {
     dto: CreateDiscountDto,
     userId: string,
   ) {
-    if (dto.code) {
+    if (
+      dto.type ===
+        'PERCENTAGE' &&
+      dto.value > 100
+    ) {
+      throw new BadRequestException(
+        'Discount percentage maksimal 100%',
+      );
+    }
+
+    if (
+      dto.startDate &&
+      dto.endDate &&
+      new Date(dto.endDate) <
+        new Date(dto.startDate)
+    ) {
+      throw new BadRequestException(
+        'End date tidak valid',
+      );
+    }
+
+    const normalizedCode =
+      dto.code?.toUpperCase();
+
+    if (normalizedCode) {
       const existingDiscount =
         await this.prisma.discount.findFirst({
           where: {
-            code: dto.code,
+            code:
+              normalizedCode,
           },
         });
 
@@ -39,7 +64,8 @@ export class DiscountsService {
         data: {
           name: dto.name,
 
-          code: dto.code,
+          code:
+            normalizedCode,
 
           type: dto.type,
 
@@ -51,24 +77,30 @@ export class DiscountsService {
           maxDiscount:
             dto.maxDiscount,
 
-          startDate: dto.startDate
-            ? new Date(
-                dto.startDate,
-              )
-            : null,
+          startDate:
+            dto.startDate
+              ? new Date(
+                  dto.startDate,
+                )
+              : null,
 
-          endDate: dto.endDate
-            ? new Date(
-                dto.endDate,
-              )
-            : null,
+          endDate:
+            dto.endDate
+              ? new Date(
+                  dto.endDate,
+                )
+              : null,
 
           isActive:
-            dto.isActive,
+            dto.isActive ??
+            true,
 
-          scope: dto.scope,
+          scope:
+            dto.scope ??
+            'GLOBAL',
 
-          createdById: userId,
+          createdById:
+            userId,
         },
       });
 
@@ -189,13 +221,40 @@ export class DiscountsService {
     }
 
     if (
-      dto.code &&
-      dto.code !== discount.code
+      dto.type ===
+        'PERCENTAGE' &&
+      dto.value &&
+      dto.value > 100
+    ) {
+      throw new BadRequestException(
+        'Discount percentage maksimal 100%',
+      );
+    }
+
+    if (
+      dto.startDate &&
+      dto.endDate &&
+      new Date(dto.endDate) <
+        new Date(dto.startDate)
+    ) {
+      throw new BadRequestException(
+        'End date tidak valid',
+      );
+    }
+
+    const normalizedCode =
+      dto.code?.toUpperCase();
+
+    if (
+      normalizedCode &&
+      normalizedCode !==
+        discount.code
     ) {
       const existingDiscount =
         await this.prisma.discount.findFirst({
           where: {
-            code: dto.code,
+            code:
+              normalizedCode,
           },
         });
 
@@ -218,7 +277,7 @@ export class DiscountsService {
             discount.name,
 
           code:
-            dto.code ??
+            normalizedCode ??
             discount.code,
 
           type:
@@ -265,7 +324,8 @@ export class DiscountsService {
       message:
         'Discount berhasil diupdate',
 
-      data: updatedDiscount,
+      data:
+        updatedDiscount,
     };
   }
 
@@ -304,43 +364,34 @@ export class DiscountsService {
     const discount =
       await this.prisma.discount.findFirst({
         where: {
-          code,
+          code:
+            code.toUpperCase(),
 
           isActive: true,
-
-          OR: [
-            {
-              startDate: null,
-            },
-
-            {
-              startDate: {
-                lte: now,
-              },
-            },
-          ],
-
-          AND: [
-            {
-              OR: [
-                {
-                  endDate: null,
-                },
-
-                {
-                  endDate: {
-                    gte: now,
-                  },
-                },
-              ],
-            },
-          ],
         },
       });
 
     if (!discount) {
       throw new BadRequestException(
         'Discount tidak valid',
+      );
+    }
+
+    if (
+      discount.startDate &&
+      discount.startDate > now
+    ) {
+      throw new BadRequestException(
+        'Discount belum dimulai',
+      );
+    }
+
+    if (
+      discount.endDate &&
+      discount.endDate < now
+    ) {
+      throw new BadRequestException(
+        'Discount sudah expired',
       );
     }
 
@@ -367,7 +418,8 @@ export class DiscountsService {
     }
 
     if (
-      discount.type === 'FIXED'
+      discount.type ===
+      'FIXED'
     ) {
       discountAmount =
         discount.value;
@@ -380,6 +432,14 @@ export class DiscountsService {
     ) {
       discountAmount =
         discount.maxDiscount;
+    }
+
+    if (
+      discountAmount >
+      subtotal
+    ) {
+      discountAmount =
+        subtotal;
     }
 
     return {

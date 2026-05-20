@@ -24,6 +24,8 @@ CREATE TABLE `Outlet` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    UNIQUE INDEX `Outlet_name_key`(`name`),
+    INDEX `Outlet_name_idx`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -42,6 +44,8 @@ CREATE TABLE `User` (
     `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `User_email_key`(`email`),
+    INDEX `User_email_idx`(`email`),
+    INDEX `User_outletId_idx`(`outletId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -49,12 +53,15 @@ CREATE TABLE `User` (
 CREATE TABLE `Cashier` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `pin` VARCHAR(191) NULL,
+    `pin` VARCHAR(191) NOT NULL,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `outletId` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Cashier_outletId_idx`(`outletId`),
+    INDEX `Cashier_name_idx`(`name`),
+    UNIQUE INDEX `Cashier_outletId_pin_key`(`outletId`, `pin`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -77,6 +84,7 @@ CREATE TABLE `Product` (
     `barcode` VARCHAR(191) NULL,
     `stock` INTEGER NOT NULL DEFAULT 0,
     `minStock` INTEGER NOT NULL DEFAULT 5,
+    `trackStock` BOOLEAN NOT NULL DEFAULT true,
     `costPrice` DOUBLE NOT NULL,
     `sellingPrice` DOUBLE NOT NULL,
     `imageUrl` VARCHAR(191) NULL,
@@ -88,6 +96,10 @@ CREATE TABLE `Product` (
 
     UNIQUE INDEX `Product_sku_key`(`sku`),
     UNIQUE INDEX `Product_barcode_key`(`barcode`),
+    INDEX `Product_name_idx`(`name`),
+    INDEX `Product_barcode_idx`(`barcode`),
+    INDEX `Product_sku_idx`(`sku`),
+    INDEX `Product_outletId_idx`(`outletId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -103,6 +115,8 @@ CREATE TABLE `Customer` (
     `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `Customer_phone_key`(`phone`),
+    INDEX `Customer_phone_idx`(`phone`),
+    INDEX `Customer_name_idx`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -139,7 +153,7 @@ CREATE TABLE `Sale` (
     `totalAmount` DOUBLE NOT NULL,
     `totalProfit` DOUBLE NOT NULL,
     `paymentMethod` ENUM('CASH', 'QRIS', 'DEBIT', 'CREDIT_CARD', 'TRANSFER', 'E_WALLET') NOT NULL,
-    `paymentStatus` ENUM('PENDING', 'PAID', 'CANCELLED', 'REFUNDED') NOT NULL DEFAULT 'PENDING',
+    `paymentStatus` ENUM('PENDING', 'PAID', 'CANCELLED', 'REFUNDED') NOT NULL DEFAULT 'PAID',
     `paidAmount` DOUBLE NULL,
     `changeAmount` DOUBLE NULL,
     `paymentProof` VARCHAR(191) NULL,
@@ -154,6 +168,10 @@ CREATE TABLE `Sale` (
     `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `Sale_invoiceNumber_key`(`invoiceNumber`),
+    INDEX `Sale_invoiceNumber_idx`(`invoiceNumber`),
+    INDEX `Sale_cashierId_idx`(`cashierId`),
+    INDEX `Sale_outletId_idx`(`outletId`),
+    INDEX `Sale_createdAt_idx`(`createdAt`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -309,6 +327,7 @@ CREATE TABLE `Purchase` (
     `invoiceNumber` VARCHAR(191) NOT NULL,
     `supplierId` VARCHAR(191) NOT NULL,
     `outletId` VARCHAR(191) NOT NULL,
+    `status` ENUM('PENDING', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'COMPLETED',
     `totalAmount` DOUBLE NOT NULL,
     `notes` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

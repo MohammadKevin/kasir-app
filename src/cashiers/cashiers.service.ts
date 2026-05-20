@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import * as bcrypt from 'bcrypt';
+
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -12,7 +14,7 @@ import { UpdateCashierDto } from './dto/update-cashier.dto';
 @Injectable()
 export class CashiersService {
   constructor(
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async create(
@@ -35,9 +37,7 @@ export class CashiersService {
       await this.prisma.cashier.findFirst({
         where: {
           name: dto.name,
-
-          outletId:
-            dto.outletId,
+          outletId: dto.outletId,
         },
       });
 
@@ -47,19 +47,34 @@ export class CashiersService {
       );
     }
 
+    const existingPin =
+      await this.prisma.cashier.findFirst({
+        where: {
+          outletId: dto.outletId,
+          pin: dto.pin,
+        },
+      });
+
+    if (existingPin) {
+      throw new BadRequestException(
+        'PIN sudah digunakan',
+      );
+    }
+
+    const hashedPin =
+      await bcrypt.hash(
+        dto.pin,
+        10,
+      );
+
     const cashier =
       await this.prisma.cashier.create({
         data: {
           name: dto.name,
-
-          pin: dto.pin,
-
-          outletId:
-            dto.outletId,
-
+          pin: hashedPin,
+          outletId: dto.outletId,
           isActive:
-            dto.isActive ??
-            true,
+            dto.isActive ?? true,
         },
       });
 
@@ -89,7 +104,12 @@ export class CashiersService {
     return this.prisma.cashier.findMany({
       where: {
         outletId,
+        isActive: true,
+      },
 
+      select: {
+        id: true,
+        name: true,
         isActive: true,
       },
 
@@ -113,8 +133,7 @@ export class CashiersService {
             take: 10,
 
             orderBy: {
-              createdAt:
-                'desc',
+              createdAt: 'desc',
             },
           },
         },
@@ -146,6 +165,17 @@ export class CashiersService {
       );
     }
 
+    let hashedPin =
+      cashier.pin;
+
+    if (dto.pin) {
+      hashedPin =
+        await bcrypt.hash(
+          dto.pin,
+          10,
+        );
+    }
+
     const updatedCashier =
       await this.prisma.cashier.update({
         where: {
@@ -157,9 +187,7 @@ export class CashiersService {
             dto.name ??
             cashier.name,
 
-          pin:
-            dto.pin ??
-            cashier.pin,
+          pin: hashedPin,
 
           isActive:
             dto.isActive ??

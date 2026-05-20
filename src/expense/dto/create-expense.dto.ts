@@ -4,7 +4,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
+
+import { Type } from 'class-transformer';
 
 import { ExpenseType } from '@prisma/client';
 
@@ -20,7 +23,9 @@ export class CreateExpenseDto {
   @IsEnum(ExpenseType)
   type!: ExpenseType;
 
+  @Type(() => Number)
   @IsNumber()
+  @Min(0)
   amount!: number;
 
   @IsString()

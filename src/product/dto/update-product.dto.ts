@@ -1,12 +1,13 @@
 import {
+  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   Min,
-} from "class-validator";
+} from 'class-validator';
 
-import { Type } from "class-transformer";
+import { Type } from 'class-transformer';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -36,11 +37,13 @@ export class UpdateProductDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   costPrice?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   sellingPrice?: number;
 
   @IsOptional()
@@ -48,6 +51,6 @@ export class UpdateProductDto {
   categoryId?: string;
 
   @IsOptional()
-  @IsString()
-  outletId?: string;
+  @IsBoolean()
+  isActive?: boolean;
 }

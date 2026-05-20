@@ -1,5 +1,3 @@
-// expense/expense.service.ts
-
 import {
   Injectable,
   NotFoundException,
@@ -13,11 +11,12 @@ import { UpdateExpenseDto } from './dto/update-expense.dto';
 @Injectable()
 export class ExpenseService {
   constructor(
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async create(
     dto: CreateExpenseDto,
+
     userId?: string,
   ) {
     const outlet =
@@ -45,7 +44,12 @@ export class ExpenseService {
 
           amount: dto.amount,
 
-          outletId: dto.outletId,
+          outletId:
+            dto.outletId,
+        },
+
+        include: {
+          outlet: true,
         },
       });
 
@@ -58,7 +62,8 @@ export class ExpenseService {
 
           entity: 'EXPENSE',
 
-          entityId: expense.id,
+          entityId:
+            expense.id,
 
           description: `Create expense ${expense.title}`,
         },
@@ -108,7 +113,9 @@ export class ExpenseService {
 
   async update(
     id: string,
+
     dto: UpdateExpenseDto,
+
     userId?: string,
   ) {
     const expense =
@@ -122,6 +129,25 @@ export class ExpenseService {
       throw new NotFoundException(
         'Expense tidak ditemukan',
       );
+    }
+
+    if (
+      dto.outletId &&
+      dto.outletId !==
+        expense.outletId
+    ) {
+      const outlet =
+        await this.prisma.outlet.findUnique({
+          where: {
+            id: dto.outletId,
+          },
+        });
+
+      if (!outlet) {
+        throw new NotFoundException(
+          'Outlet tidak ditemukan',
+        );
+      }
     }
 
     const updatedExpense =
@@ -146,6 +172,14 @@ export class ExpenseService {
           amount:
             dto.amount ??
             expense.amount,
+
+          outletId:
+            dto.outletId ??
+            expense.outletId,
+        },
+
+        include: {
+          outlet: true,
         },
       });
 
@@ -158,7 +192,8 @@ export class ExpenseService {
 
           entity: 'EXPENSE',
 
-          entityId: expense.id,
+          entityId:
+            expense.id,
 
           description: `Update expense ${expense.title}`,
         },
@@ -175,6 +210,7 @@ export class ExpenseService {
 
   async remove(
     id: string,
+
     userId?: string,
   ) {
     const expense =
@@ -205,7 +241,8 @@ export class ExpenseService {
 
           entity: 'EXPENSE',
 
-          entityId: expense.id,
+          entityId:
+            expense.id,
 
           description: `Delete expense ${expense.title}`,
         },
@@ -227,9 +264,63 @@ export class ExpenseService {
           amount: true,
         },
 
-        _count: true,
+        _count: {
+          id: true,
+        },
+
+        orderBy: {
+          type: 'asc',
+        },
       });
 
     return expenses;
+  }
+
+  async expenseByOutlet(
+    outletId: string,
+  ) {
+    return this.prisma.expense.findMany({
+      where: {
+        outletId,
+      },
+
+      include: {
+        outlet: true,
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async totalExpenseToday() {
+    const startToday =
+      new Date();
+
+    startToday.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    const result =
+      await this.prisma.expense.aggregate({
+        where: {
+          createdAt: {
+            gte: startToday,
+          },
+        },
+
+        _sum: {
+          amount: true,
+        },
+      });
+
+    return {
+      total:
+        result._sum.amount || 0,
+    };
   }
 }

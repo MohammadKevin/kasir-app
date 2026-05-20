@@ -15,19 +15,19 @@ import * as bcrypt from 'bcrypt';
 
 import { randomUUID } from 'crypto';
 
+import { Role } from '@prisma/client';
+
 import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
-import { Role } from '@prisma/client';
-
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private mailService: MailService,
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -48,6 +48,12 @@ export class AuthService {
       );
     }
 
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Akun tidak aktif',
+      );
+    }
+
     const isPasswordValid =
       await bcrypt.compare(
         dto.password,
@@ -58,6 +64,30 @@ export class AuthService {
       throw new UnauthorizedException(
         'Email atau password salah',
       );
+    }
+
+    let cashiers: {
+  id: string;
+  name: string;
+}[] = [];
+
+    if (user.outletId) {
+      cashiers =
+        await this.prisma.cashier.findMany({
+          where: {
+            outletId: user.outletId,
+            isActive: true,
+          },
+
+          select: {
+            id: true,
+            name: true,
+          },
+
+          orderBy: {
+            name: 'asc',
+          },
+        });
     }
 
     const payload = {
@@ -83,75 +113,67 @@ export class AuthService {
         role: user.role,
         outlet: user.outlet,
       },
+
+      cashiers,
     };
   }
 
   async createAdmin(
     dto: CreateAdminDto,
   ) {
-    try {
-      const existingUser =
-        await this.prisma.user.findUnique({
-          where: {
-            email: dto.email,
-          },
-        });
-
-      if (existingUser) {
-        throw new BadRequestException(
-          'Email sudah digunakan',
-        );
-      }
-
-      const outlet =
-        await this.prisma.outlet.findUnique({
-          where: {
-            id: dto.outletId,
-          },
-        });
-
-      if (!outlet) {
-        throw new NotFoundException(
-          'Outlet tidak ditemukan',
-        );
-      }
-
-      const hashedPassword =
-        await bcrypt.hash(
-          dto.password,
-          10,
-        );
-
-      const admin =
-        await this.prisma.user.create({
-          data: {
-            name: dto.name,
-            email: dto.email,
-            password: hashedPassword,
-            role: Role.ADMIN,
-            outletId: dto.outletId,
-          },
-        });
-
-      return {
-        message:
-          'Admin berhasil dibuat',
-
-        data: {
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role,
+    const existingUser =
+      await this.prisma.user.findUnique({
+        where: {
+          email: dto.email,
         },
-      };
-    } catch (error) {
-      console.error(
-        'CREATE ADMIN ERROR:',
-        error,
+      });
+
+    if (existingUser) {
+      throw new BadRequestException(
+        'Email sudah digunakan',
+      );
+    }
+
+    const outlet =
+      await this.prisma.outlet.findUnique({
+        where: {
+          id: dto.outletId,
+        },
+      });
+
+    if (!outlet) {
+      throw new NotFoundException(
+        'Outlet tidak ditemukan',
+      );
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(
+        dto.password,
+        10,
       );
 
-      throw error;
-    }
+    const admin =
+      await this.prisma.user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+          role: Role.ADMIN,
+          outletId: dto.outletId,
+        },
+
+        include: {
+          outlet: true,
+        },
+      });
+
+    return {
+      message:
+        'Admin berhasil dibuat',
+
+      data: admin,
+    };
   }
 
   async forgotPassword(
@@ -189,11 +211,39 @@ export class AuthService {
       },
     });
 
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    await this.mailService.sendMail({
+      to: user.email,
+      subject: 'Reset Password',
+      html: `
+        <div style="font-family:sans-serif">
+          <h2>Reset Password</h2>
+
+          <p>Klik tombol di bawah untuk reset password:</p>
+
+          <a
+            href="${resetLink}"
+            style="
+              display:inline-block;
+              padding:10px 20px;
+              background:#000;
+              color:#fff;
+              text-decoration:none;
+              border-radius:8px;
+            "
+          >
+            Reset Password
+          </a>
+
+          <p>Link berlaku 15 menit.</p>
+        </div>
+      `,
+    });
+
     return {
       message:
-        'Reset password berhasil dibuat',
-
-      resetToken,
+        'Link reset password berhasil dikirim',
     };
   }
 
@@ -236,7 +286,6 @@ export class AuthService {
 
       data: {
         password: hashedPassword,
-
         resetToken: null,
         resetTokenExp: null,
       },
@@ -251,27 +300,36 @@ export class AuthService {
   async getProfile(
     userId: string,
   ) {
-    return await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
 
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
 
-        outlet: {
-          select: {
-            id: true,
-            name: true,
-            noTelp: true,
-            address: true,
-            qrisImage: true,
+          outlet: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              noTelp: true,
+              qrisImage: true,
+            },
           },
         },
-      },
-    });
+      });
+
+    if (!user) {
+      throw new NotFoundException(
+        'User tidak ditemukan',
+      );
+    }
+
+    return user;
   }
 }

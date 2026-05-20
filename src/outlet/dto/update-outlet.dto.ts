@@ -1,4 +1,7 @@
-import { IsOptional, IsString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateOutletDto {
   @IsOptional()
@@ -12,8 +15,4 @@ export class UpdateOutletDto {
   @IsOptional()
   @IsString()
   noTelp?: string;
-
-  @IsOptional()
-  @IsString()
-  qrisImage?: string;
 }
