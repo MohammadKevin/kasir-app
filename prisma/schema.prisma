@@ -1,0 +1,517 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  TRANSFER
+  DEBIT
+  CREDIT
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum TransactionStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum ExpenseCategory {
+  OPERATIONAL
+  SALARY
+  ELECTRICITY
+  INTERNET
+  RENT
+  TRANSPORT
+  OTHER
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+model Admin {
+  id       String @id @default(uuid()) @db.Char(36)
+  name     String
+  email    String @unique
+  password String
+
+  stores          Store[] @relation("AdminStores")
+  createdCashiers User[]  @relation("AdminCashiers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Store {
+  id      String @id @default(uuid()) @db.Char(36)
+  adminId String @db.Char(36)
+
+  name     String
+  email    String @unique
+  password String
+
+  phone   String?
+  address String? @db.Text
+  logo    String? @db.Text
+
+  isActive Boolean @default(true)
+
+  admin Admin @relation("AdminStores", fields: [adminId], references: [id], onDelete: Cascade)
+
+  cashiers       User[]
+  products       Product[]
+  categories     Category[]
+  customers      Customer[]
+  suppliers      Supplier[]
+  transactions   Transaction[]
+  expenses       Expense[]
+  shifts         Shift[]
+  cartHolds      CartHold[]
+  stockMovements StockMovement[]
+  purchases Purchase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Discount  Discount[]
+
+  @@index([adminId])
+  @@map("stores")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Char(36)
+
+  adminId String @db.Char(36)
+  storeId String @db.Char(36)
+
+  name  String
+  phone String?
+  pin   String
+
+  isActive Boolean @default(true)
+
+  admin Admin @relation("AdminCashiers", fields: [adminId], references: [id], onDelete: Cascade)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[] @relation("CashierTransactions")
+  shifts       Shift[]
+  cartHolds    CartHold[]    @relation("CashierCartHolds")
+  auditLogs    AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, pin])
+  @@index([storeId])
+  @@index([adminId])
+  @@map("users")
+}
+
+model Product {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  name        String  @db.VarChar(255)
+  image       String? @db.Text
+  sku         String? @db.VarChar(100)
+  barcode     String? @db.VarChar(100)
+  description String? @db.Text
+  categoryId String? @db.Char(36)
+
+  costPrice    Int
+  sellingPrice Int
+
+  stock        Int @default(0)
+  minimumStock Int @default(0)
+
+  isActive Boolean @default(true)
+
+  deletedAt DateTime?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  items     TransactionItem[]
+  discounts DiscountProduct[]
+  movements StockMovement[]
+  purchaseItems PurchaseItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([name])
+  @@index([sku])
+  @@index([barcode])
+  @@map("products")
+}
+
+model Customer {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  name  String
+  phone String?
+
+  points Int @default(0)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[] @relation("CustomerTransactions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@map("customers")
+}
+
+model Supplier {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  name  String
+  phone String?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases Purchase[]
+
+  @@index([storeId])
+  @@map("suppliers")
+}
+
+model Transaction {
+  id String @id @default(uuid()) @db.Char(36)
+
+  invoiceNumber String
+
+  subtotal Int
+
+  totalDiscount Int @default(0)
+
+  total Int
+
+  paidAmount Int
+
+  changeAmount Int
+
+  paymentMethod PaymentMethod
+
+  status TransactionStatus @default(PAID)
+
+  voidReason String?
+
+  storeId String @db.Char(36)
+
+  cashierId String @db.Char(36)
+
+  customerId String? @db.Char(36)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  cashier User @relation("CashierTransactions", fields: [cashierId], references: [id], onDelete: Restrict)
+
+  customer Customer? @relation("CustomerTransactions", fields: [customerId], references: [id], onDelete: SetNull)
+
+  items TransactionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, invoiceNumber])
+
+  @@index([storeId])
+  @@index([cashierId])
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([storeId, createdAt])
+
+  @@map("transactions")
+}
+
+model Discount {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  name  String
+  type  DiscountType
+  value Int
+
+  isActive Boolean @default(true)
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  products DiscountProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@map("discounts")
+}
+
+model DiscountProduct {
+  discountId String @db.Char(36)
+  productId  String @db.Char(36)
+
+  discount Discount @relation(fields: [discountId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([discountId, productId])
+  @@map("discount_products")
+}
+
+model TransactionItem {
+  id String @id @default(uuid()) @db.Char(36)
+
+  transactionId String @db.Char(36)
+
+  productId String @db.Char(36)
+
+  quantity Int
+
+  originalPrice Int
+
+  masterDiscount Int @default(0)
+
+  cashierDiscount Int @default(0)
+
+  finalPrice Int
+
+  subtotal Int
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([transactionId])
+  @@index([productId])
+
+  @@map("transaction_items")
+}
+
+model Expense {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  title    String
+  amount   Int
+  category ExpenseCategory
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+  @@index([createdAt])
+  @@map("expenses")
+}
+
+model Shift {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+  userId  String @db.Char(36)
+
+  status ShiftStatus @default(OPEN)
+
+  openingCash Int
+
+  expectedCash Int? @default(0)
+
+  closingCash Int?
+
+  difference Int? @default(0)
+
+  note String?
+
+  closedAt DateTime?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("shifts")
+}
+
+model Purchase {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  supplierId String @db.Char(36)
+
+  invoiceNumber String
+
+  total Int
+
+  note String?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  items PurchaseItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([supplierId])
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id String @id @default(uuid()) @db.Char(36)
+
+  purchaseId String @db.Char(36)
+
+  productId String @db.Char(36)
+
+  quantity Int
+
+  costPrice Int
+
+  subtotal Int
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([purchaseId])
+  @@index([productId])
+
+  @@map("purchase_items")
+}
+
+model Category {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId String @db.Char(36)
+
+  name String
+
+  description String?
+
+  isActive Boolean @default(true)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, name])
+  @@index([storeId])
+  @@map("categories")
+}
+
+model CartHold {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId   String @db.Char(36)
+  cashierId String @db.Char(36)
+
+  data Json
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  cashier User @relation("CashierCartHolds", fields: [cashierId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+  @@index([cashierId])
+  @@map("cart_holds")
+}
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Char(36)
+
+  userId String @db.Char(36)
+
+  action AuditAction
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model StockMovement {
+  id String @id @default(uuid()) @db.Char(36)
+
+  storeId   String @db.Char(36)
+  productId String @db.Char(36)
+
+  qty  Int
+  type String
+
+  note String?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([storeId])
+  @@map("stock_movements")
+}

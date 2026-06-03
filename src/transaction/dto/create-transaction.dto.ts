@@ -1,0 +1,45 @@
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator'
+
+import { PaymentMethod } from '@prisma/client'
+
+import { TransactionItemDto } from './transaction-item.dto'
+
+export class CreateTransactionDto {
+  @IsString()
+  storeId!: string
+
+  @IsString()
+  cashierId!: string
+
+  @IsOptional()
+  @IsString()
+  customerId?: string
+
+  @IsOptional()
+  @IsString()
+  customerName?: string
+
+  @IsOptional()
+  @IsString()
+  phone?: string
+
+  @IsOptional()
+  @IsBoolean()
+  saveCustomer?: boolean
+
+  @IsEnum(PaymentMethod)
+  paymentMethod!: PaymentMethod
+
+  @IsInt()
+  paidAmount!: number
+
+  @IsArray()
+  items!: TransactionItemDto[]
+}
