@@ -12,6 +12,98 @@ export class DashboardService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // DASHBOARD ADMIN
+  async adminOverview() {
+    const [
+      stores,
+      cashiers,
+      transactions,
+      sales,
+      expenses,
+      recentTransactions,
+    ] =
+      await Promise.all([
+
+        this.prisma.store.count(),
+
+        this.prisma.cashier.count(),
+
+        this.prisma.transaction.count({
+          where: {
+            status:
+              TransactionStatus.PAID,
+          },
+        }),
+
+        this.prisma.transaction.aggregate({
+          _sum: {
+            total:
+              true,
+          },
+
+          where: {
+            status:
+              TransactionStatus.PAID,
+          },
+        }),
+
+        this.prisma.expense.aggregate({
+          _sum: {
+            amount:
+              true,
+          },
+        }),
+
+        this.prisma.transaction.findMany({
+          take: 10,
+
+          orderBy: {
+            createdAt:
+              'desc',
+          },
+
+          include: {
+            cashier:
+              true,
+
+            store:
+              true,
+          },
+        }),
+      ])
+
+    const totalSales =
+      sales._sum.total ??
+      0
+
+    const totalExpense =
+      expenses._sum.amount ??
+      0
+
+    return {
+      totalStores:
+        stores,
+
+      totalCashiers:
+        cashiers,
+
+      totalTransactions:
+        transactions,
+
+      totalRevenue:
+        totalSales,
+
+      totalExpense,
+
+      profit:
+        totalSales -
+        totalExpense,
+
+      recentTransactions,
+    }
+  }
+
+  // DASHBOARD STORE
   async overview(
     storeId: string,
   ) {
@@ -37,7 +129,8 @@ export class DashboardService {
       await Promise.all([
         this.prisma.transaction.aggregate({
           _sum: {
-            total: true,
+            total:
+              true,
           },
 
           where: {
@@ -69,16 +162,12 @@ export class DashboardService {
 
         this.prisma.purchase.aggregate({
           _sum: {
-            total: true,
+            total:
+              true,
           },
 
           where: {
             storeId,
-
-            createdAt: {
-              gte:
-                startToday,
-            },
           },
         }),
 
@@ -91,14 +180,6 @@ export class DashboardService {
           where: {
             transaction: {
               storeId,
-
-              status:
-                TransactionStatus.PAID,
-
-              createdAt: {
-                gte:
-                  startToday,
-              },
             },
           },
         }),
@@ -146,7 +227,8 @@ export class DashboardService {
 
       todayProductsSold:
         productsSold._sum
-          .quantity ?? 0,
+          .quantity ??
+        0,
 
       totalCustomers:
         customers,
@@ -167,6 +249,12 @@ export class DashboardService {
           'productId',
         ],
 
+        where: {
+          transaction: {
+            storeId,
+          },
+        },
+
         _sum: {
           quantity:
             true,
@@ -179,39 +267,34 @@ export class DashboardService {
           },
         },
 
-        take: 10,
+        take:
+          10,
       })
 
-    const result =
-      await Promise.all(
-        items.map(
-          async (
-            item,
-          ) => {
-            const product =
-              await this.prisma.product.findUnique({
-                where: {
-                  id:
-                    item.productId,
-                },
-              })
+    return Promise.all(
+      items.map(
+        async (
+          item,
+        ) => {
+          const product =
+            await this.prisma.product.findUnique({
+              where: {
+                id:
+                  item.productId,
+              },
+            })
 
-            return {
-              productId:
-                item.productId,
+          return {
+            name:
+              product?.name,
 
-              name:
-                product?.name,
-
-              sold:
-                item._sum
-                  .quantity,
-            }
-          },
-        ),
-      )
-
-    return result
+            sold:
+              item._sum
+                .quantity,
+          }
+        },
+      ),
+    )
   }
 
   async lowStock(
@@ -222,16 +305,12 @@ export class DashboardService {
         storeId,
 
         stock: {
-          lte: 5,
+          lte:
+            5,
         },
 
         deletedAt:
           null,
-      },
-
-      orderBy: {
-        stock:
-          'asc',
       },
     })
   }

@@ -15,6 +15,7 @@ export class PrismaService
     OnModuleInit,
     OnModuleDestroy
 {
+  cashier: any
   async onModuleInit() {
     await this.$connect()
   }
