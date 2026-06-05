@@ -17,7 +17,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
 
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async login(
     dto: LoginDto,
@@ -27,6 +27,14 @@ export class AuthService {
         where: {
           email:
             dto.email,
+        },
+
+        include: {
+          stores: {
+            select: {
+              id: true,
+            },
+          },
         },
       })
 
@@ -62,6 +70,12 @@ export class AuthService {
 
           type:
             'ADMIN',
+
+          storeId:
+            admin
+              .stores?.[0]
+              ?.id ??
+            null,
         },
       }
     }
@@ -111,6 +125,9 @@ export class AuthService {
 
         type:
           'STORE',
+
+        storeId:
+          store.id,
       },
     }
   }
