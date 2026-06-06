@@ -40,8 +40,19 @@ export class CashierService {
     const exist =
       await this.prisma.user.findFirst({
         where: {
-          storeId: dto.storeId,
-          name: dto.name,
+          storeId:
+            dto.storeId,
+
+          OR: [
+            {
+              name:
+                dto.name,
+            },
+            {
+              phone:
+                dto.phone,
+            },
+          ],
         },
       })
 
@@ -55,18 +66,23 @@ export class CashierService {
       data: {
         adminId,
 
-        storeId: dto.storeId,
+        storeId:
+          dto.storeId,
 
-        name: dto.name,
+        name:
+          dto.name,
 
-        phone: dto.phone,
+        phone:
+          dto.phone,
 
-        pin: await bcrypt.hash(
-          dto.pin,
-          10,
-        ),
+        pin:
+          await bcrypt.hash(
+            dto.pin,
+            10,
+          ),
 
-        isActive: true,
+        isActive:
+          true,
       },
 
       select: {
@@ -97,7 +113,8 @@ export class CashierService {
       },
 
       orderBy: {
-        createdAt: 'desc',
+        createdAt:
+          'desc',
       },
     })
   }
@@ -130,19 +147,24 @@ export class CashierService {
     const data: any = {}
 
     if (dto.name)
-      data.name = dto.name
+      data.name =
+        dto.name
 
     if (dto.phone)
-      data.phone = dto.phone
+      data.phone =
+        dto.phone
 
     if (
-      dto.isActive !== undefined
+      dto.isActive !==
+      undefined
     ) {
       data.isActive =
         dto.isActive
     }
 
-    if (dto.pin) {
+    if (
+      dto.pin
+    ) {
       data.pin =
         await bcrypt.hash(
           dto.pin,
@@ -162,7 +184,9 @@ export class CashierService {
   async remove(
     id: string,
   ) {
-    await this.findOne(id)
+    await this.findOne(
+      id,
+    )
 
     await this.prisma.user.delete({
       where: {
@@ -182,13 +206,24 @@ export class CashierService {
     const cashier =
       await this.prisma.user.findUnique({
         where: {
-          id: dto.cashierId,
+          id:
+            dto.cashierId,
         },
       })
 
-    if (!cashier) {
+    if (
+      !cashier
+    ) {
       throw new UnauthorizedException(
         'Cashier tidak ditemukan',
+      )
+    }
+
+    if (
+      !cashier.isActive
+    ) {
+      throw new UnauthorizedException(
+        'Cashier nonaktif',
       )
     }
 
@@ -198,22 +233,42 @@ export class CashierService {
         cashier.pin,
       )
 
-    if (!valid) {
+    if (
+      !valid
+    ) {
       throw new UnauthorizedException(
         'PIN salah',
       )
     }
 
     return {
+      success:
+        true,
+
       message:
         'Kasir aktif',
 
       transactionAllowed:
         true,
 
+      session: {
+        active:
+          true,
+
+        startedAt:
+          new Date(),
+      },
+
       cashier: {
-        id: cashier.id,
-        name: cashier.name,
+        id:
+          cashier.id,
+
+        name:
+          cashier.name,
+
+        phone:
+          cashier.phone,
+
         storeId:
           cashier.storeId,
       },
