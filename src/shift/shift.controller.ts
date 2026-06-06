@@ -23,18 +23,20 @@ export class ShiftController {
   ) {}
 
   @Post('open')
-  open(
-    @Req()
-    req: any,
+open(
+  @Req()
+  req: any,
 
-    @Body()
-    dto: OpenShiftDto,
-  ) {
-    return this.shiftService.open(
-      req.user.sub,
-      dto,
-    )
-  }
+  @Body()
+  dto: OpenShiftDto,
+) {
+  console.log('JWT USER', req.user)
+
+  return this.shiftService.open(
+    req.user.sub,
+    dto,
+  )
+}
 
   @Post('close/:id')
   close(
