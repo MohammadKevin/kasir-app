@@ -21,7 +21,7 @@ import { UpdateProductDto } from './dto/update-product.dto'
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
-  ) {}
+  ) { }
 
   @Post()
   create(
@@ -70,6 +70,16 @@ export class ProductController {
   ) {
     return this.productService.generateBarcode(
       id,
+    )
+  }
+
+  @Get('scan/:barcode')
+  scan(
+    @Param('barcode')
+    barcode: string,
+  ) {
+    return this.productService.findByBarcode(
+      barcode,
     )
   }
 

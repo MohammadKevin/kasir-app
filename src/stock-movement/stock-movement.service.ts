@@ -4,9 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 
-import { PrismaService } from '../prisma/prisma.service'
+import {
+  PrismaService,
+} from '../prisma/prisma.service'
 
-import { CreateStockMovementDto } from './dto/create-stock-movement.dto'
+import {
+  CreateStockMovementDto,
+} from './dto/create-stock-movement.dto'
 
 @Injectable()
 export class StockMovementService {
@@ -17,61 +21,146 @@ export class StockMovementService {
   async create(
     dto: CreateStockMovementDto,
   ) {
-    const product =
-      await this.prisma.product.findUnique({
-        where: {
-          id: dto.productId,
-        },
-      })
 
-    if (!product) {
+    let product =
+      null
+
+    // SUPPORT SCAN BARCODE
+    if (
+      dto.barcode
+    ) {
+      product =
+        await this.prisma.product.findFirst({
+          where: {
+            barcode:
+              dto.barcode,
+
+            storeId:
+              dto.storeId,
+
+            deletedAt:
+              null,
+          },
+        })
+    }
+
+    // SUPPORT MANUAL PRODUCT
+    if (
+      !product &&
+      dto.productId
+    ) {
+      product =
+        await this.prisma.product.findFirst({
+          where: {
+            id:
+              dto.productId,
+
+            storeId:
+              dto.storeId,
+
+            deletedAt:
+              null,
+          },
+        })
+    }
+
+    if (
+      !product
+    ) {
       throw new NotFoundException(
         'Produk tidak ditemukan',
       )
     }
 
-    if (dto.type === 'IN') {
-      await this.prisma.product.update({
-        where: {
-          id: dto.productId,
-        },
+    return this.prisma.$transaction(
+      async (
+        tx,
+      ) => {
 
-        data: {
-          stock: {
-            increment: dto.qty,
-          },
-        },
-      })
-    }
+        let stock =
+          product.stock
 
-    if (
-      dto.type === 'OUT' ||
-      dto.type === 'DAMAGED'
-    ) {
-      if (
-        product.stock < dto.qty
-      ) {
-        throw new BadRequestException(
-          'Stok tidak mencukupi',
-        )
-      }
+        // STOCK IN
+        if (
+          dto.type ===
+          'IN'
+        ) {
+          stock +=
+            dto.qty
+        }
 
-      await this.prisma.product.update({
-        where: {
-          id: dto.productId,
-        },
+        // STOCK OUT / DAMAGED
+        if (
+          dto.type ===
+            'OUT' ||
+          dto.type ===
+            'DAMAGED'
+        ) {
 
-        data: {
-          stock: {
-            decrement: dto.qty,
-          },
-        },
-      })
-    }
+          if (
+            stock <
+            dto.qty
+          ) {
+            throw new BadRequestException(
+              'Stok tidak mencukupi',
+            )
+          }
 
-    return this.prisma.stockMovement.create({
-      data: dto,
-    })
+          stock -=
+            dto.qty
+        }
+
+        const updated =
+          await tx.product.update({
+            where: {
+              id:
+                product.id,
+            },
+
+            data: {
+              stock,
+            },
+          })
+
+        const history =
+          await tx.stockMovement.create({
+
+            data: {
+              storeId:
+                dto.storeId,
+
+              productId:
+                product.id,
+
+              qty:
+                dto.qty,
+
+              type:
+                dto.type,
+
+              note:
+                dto.note ??
+                null,
+            },
+
+            include: {
+              product:
+                true,
+            },
+          })
+
+        return {
+          message:
+            'Stok berhasil diperbarui',
+
+          product:
+            updated,
+
+          movement:
+            history,
+        }
+      },
+    )
   }
 
   async findAll(
@@ -83,11 +172,18 @@ export class StockMovementService {
       },
 
       include: {
-        product: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            barcode: true,
+          },
+        },
       },
 
       orderBy: {
-        createdAt: 'desc',
+        createdAt:
+          'desc',
       },
     })
   }
@@ -100,8 +196,14 @@ export class StockMovementService {
         productId,
       },
 
+      include: {
+        product:
+          true,
+      },
+
       orderBy: {
-        createdAt: 'desc',
+        createdAt:
+          'desc',
       },
     })
   }

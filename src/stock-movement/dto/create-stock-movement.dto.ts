@@ -1,23 +1,43 @@
 import {
-  IsInt,
-  IsOptional,
-  IsString,
+ IsEnum,
+ IsInt,
+ IsOptional,
+ IsString,
+ Min,
 } from 'class-validator'
 
+export enum StockMovementType {
+ IN='IN',
+ OUT='OUT',
+ DAMAGED='DAMAGED',
+}
+
 export class CreateStockMovementDto {
-  @IsString()
-  storeId!: string
 
-  @IsString()
-  productId!: string
+ @IsString()
+ storeId!: string
 
-  @IsString()
-  type!: string
+ @IsOptional()
+ @IsString()
+ productId?: string
 
-  @IsInt()
-  qty!: number
+ @IsOptional()
+ @IsString()
+ barcode?: string
 
-  @IsOptional()
-  @IsString()
-  note?: string
+ @IsEnum(
+   StockMovementType,
+ )
+ type!:
+   StockMovementType
+
+ @IsInt()
+
+ @Min(1)
+ qty!: number
+
+ @IsOptional()
+
+ @IsString()
+ note?: string
 }
