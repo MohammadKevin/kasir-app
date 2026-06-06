@@ -3,10 +3,15 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
 } from 'class-validator'
 
 export class UpdateProductDto {
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string
+
   @IsOptional()
   @IsString()
   name?: string

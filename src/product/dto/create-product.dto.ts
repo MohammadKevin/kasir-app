@@ -3,11 +3,16 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator'
 
 export class CreateProductDto {
-  @IsString()
-  storeId!: string
+  @IsOptional()
+  @IsUUID()
+  storeId?: string
+
+  @IsUUID()
+  categoryId!: string
 
   @IsString()
   name!: string
