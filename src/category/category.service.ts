@@ -3,9 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-
 import { PrismaService } from '../prisma/prisma.service'
-
 import { CreateCategoryDto } from './dto/create-category.dto'
 import { UpdateCategoryDto } from './dto/update-category.dto'
 
@@ -15,49 +13,38 @@ export class CategoryService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async create(
-    dto: CreateCategoryDto,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id: dto.storeId,
-        },
-      })
+  async create(dto: CreateCategoryDto) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: dto.storeId },
+    })
 
     if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
+      throw new NotFoundException('Store tidak ditemukan')
     }
 
-    const exist =
-      await this.prisma.category.findFirst({
-        where: {
-          storeId: dto.storeId,
-          name: dto.name,
-        },
-      })
+    const exist = await this.prisma.category.findFirst({
+      where: {
+        storeId: dto.storeId,
+        name: dto.name,
+      },
+    })
 
     if (exist) {
-      throw new ConflictException(
-        'Kategori sudah ada',
-      )
+      throw new ConflictException('Kategori sudah ada')
     }
 
     return this.prisma.category.create({
-      data: dto,
+      data: {
+        storeId: dto.storeId,
+        name: dto.name,
+        description: dto.description || null,
+      },
     })
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.category.findMany({
-      where: {
-        storeId,
-      },
-
+      where: { storeId },
       include: {
         _count: {
           select: {
@@ -65,65 +52,49 @@ export class CategoryService {
           },
         },
       },
-
       orderBy: {
         name: 'asc',
       },
     })
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const category =
-      await this.prisma.category.findUnique({
-        where: {
-          id,
-        },
-
-        include: {
-          products: true,
-        },
-      })
+  async findOne(id: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        products: true,
+      },
+    })
 
     if (!category) {
-      throw new NotFoundException(
-        'Kategori tidak ditemukan',
-      )
+      throw new NotFoundException('Kategori tidak ditemukan')
     }
 
     return category
   }
 
-  async update(
-    id: string,
-    dto: UpdateCategoryDto,
-  ) {
+  async update(id: string, dto: UpdateCategoryDto) {
     await this.findOne(id)
 
     return this.prisma.category.update({
-      where: {
-        id,
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        isActive: dto.isActive,
       },
-
-      data: dto,
     })
   }
 
-  async remove(
-    id: string,
-  ) {
+  async remove(id: string) {
     await this.findOne(id)
 
     await this.prisma.category.delete({
-      where: {
-        id,
-      },
+      where: { id },
     })
 
     return {
-      message:
-        'Kategori berhasil dihapus',
+      message: 'Kategori berhasil dihapus',
     }
   }
 }

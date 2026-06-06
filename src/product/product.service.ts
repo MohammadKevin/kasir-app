@@ -68,10 +68,10 @@ export class ProductService {
         storeId: dto.storeId,
         categoryId: dto.categoryId,
         name: dto.name,
-        image: dto.image,
+        image: dto.image || null,
         sku,
         barcode,
-        description: dto.description,
+        description: dto.description || null,
         costPrice: dto.costPrice,
         sellingPrice: dto.sellingPrice,
         stock: dto.stock ?? 0,
@@ -213,7 +213,19 @@ export class ProductService {
 
     return this.prisma.product.update({
       where: { id },
-      data: { ...dto },
+      data: {
+        categoryId: dto.categoryId,
+        name: dto.name,
+        image: dto.image,
+        sku: dto.sku,
+        barcode: dto.barcode,
+        description: dto.description,
+        costPrice: dto.costPrice,
+        sellingPrice: dto.sellingPrice,
+        stock: dto.stock,
+        minimumStock: dto.minimumStock,
+        isActive: dto.isActive,
+      },
       include: {
         category: true,
       },
