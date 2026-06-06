@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common'
 
 import { PrismaService } from '../prisma/prisma.service'
-
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
@@ -77,6 +76,9 @@ export class ProductService {
         storeId:
           dto.storeId,
 
+        categoryId:
+          dto.categoryId, // Jalur relasi kategori wajib dimasukkan ke sini
+
         name:
           dto.name,
 
@@ -116,7 +118,9 @@ export class ProductService {
         storeId,
         deletedAt: null,
       },
-
+      include: {
+        category: true, // Pastikan include kategori agar nama kategori muncul di tabel frontend
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -131,6 +135,9 @@ export class ProductService {
         where: {
           id,
           deletedAt: null,
+        },
+        include: {
+          category: true,
         },
       })
 
@@ -178,7 +185,6 @@ export class ProductService {
       where: {
         id: product.id,
       },
-
       data: {
         barcode,
       },
@@ -202,7 +208,6 @@ export class ProductService {
         where: {
           id: product.id,
         },
-
         data: {
           barcode:
             `${Date.now()}${Math.floor(
@@ -232,7 +237,6 @@ export class ProductService {
         await this.prisma.product.findFirst({
           where: {
             sku: dto.sku,
-
             NOT: {
               id,
             },
@@ -252,7 +256,6 @@ export class ProductService {
           where: {
             barcode:
               dto.barcode,
-
             NOT: {
               id,
             },
@@ -270,7 +273,6 @@ export class ProductService {
       where: {
         id,
       },
-
       data: {
         ...dto,
       },
@@ -287,7 +289,6 @@ export class ProductService {
       where: {
         id,
       },
-
       data: {
         stock,
       },
@@ -303,18 +304,16 @@ export class ProductService {
       where: {
         id,
       },
-
       data: {
         deletedAt:
           new Date(),
-
         isActive: false,
       },
     })
 
     return {
       message:
-        'Produk berhasil dihapus',
+        'Produk anda berhasil dihapus',
     }
   }
 }

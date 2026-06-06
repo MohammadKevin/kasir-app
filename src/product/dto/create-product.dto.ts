@@ -4,17 +4,20 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  IsNotEmpty,
 } from 'class-validator'
 
 export class CreateProductDto {
-  @IsOptional()
   @IsUUID()
-  storeId?: string
+  @IsNotEmpty()
+  storeId!: string
 
   @IsUUID()
+  @IsNotEmpty()
   categoryId!: string
 
   @IsString()
+  @IsNotEmpty()
   name!: string
 
   @IsOptional()
