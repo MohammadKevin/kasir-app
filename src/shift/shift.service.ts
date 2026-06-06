@@ -20,8 +20,9 @@ export class ShiftService {
   ) {}
 
   async open(
-    dto: OpenShiftDto,
-  ) {
+  userId: string,
+  dto: OpenShiftDto,
+) {
     const store =
       await this.prisma.store.findUnique({
         where: {
@@ -38,13 +39,13 @@ export class ShiftService {
     const user =
       await this.prisma.user.findUnique({
         where: {
-          id: dto.userId,
+          id: userId,
         },
       })
 
     if (!user) {
       throw new NotFoundException(
-        'Kasir tidak ditemukan',
+        'Kasir yang aktif tidak ditemukan',
       )
     }
 
@@ -52,7 +53,7 @@ export class ShiftService {
       await this.prisma.shift.findFirst({
         where: {
           storeId: dto.storeId,
-          userId: dto.userId,
+          userId: userId,
           status: ShiftStatus.OPEN,
         },
       })
@@ -69,7 +70,7 @@ export class ShiftService {
           dto.storeId,
 
         userId:
-          dto.userId,
+          userId,
 
         openingCash:
           Number(

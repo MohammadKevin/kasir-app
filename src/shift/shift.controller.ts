@@ -4,7 +4,11 @@ import {
   Get,
   Param,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common'
+
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
 
 import { ShiftService } from './shift.service'
 
@@ -12,6 +16,7 @@ import { OpenShiftDto } from './dto/open-shift.dto'
 import { CloseShiftDto } from './dto/close-shift.dto'
 
 @Controller('shifts')
+@UseGuards(JwtAuthGuard)
 export class ShiftController {
   constructor(
     private readonly shiftService: ShiftService,
@@ -19,10 +24,14 @@ export class ShiftController {
 
   @Post('open')
   open(
+    @Req()
+    req: any,
+
     @Body()
     dto: OpenShiftDto,
   ) {
     return this.shiftService.open(
+      req.user.sub,
       dto,
     )
   }
@@ -48,16 +57,6 @@ export class ShiftController {
   ) {
     return this.shiftService.findAll(
       storeId,
-    )
-  }
-
-  @Get(':id')
-  findOne(
-    @Param('id')
-    id: string,
-  ) {
-    return this.shiftService.findOne(
-      id,
     )
   }
 }
