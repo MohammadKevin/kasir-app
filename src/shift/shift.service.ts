@@ -1,12 +1,12 @@
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
 
 import {
   ShiftStatus,
-  PaymentMethod,
+  TransactionStatus,
 } from '@prisma/client'
 
 import { PrismaService } from '../prisma/prisma.service'
@@ -22,38 +22,78 @@ export class ShiftService {
   async open(
     dto: OpenShiftDto,
   ) {
-    const existing =
+    const store =
+      await this.prisma.store.findUnique({
+        where: {
+          id: dto.storeId,
+        },
+      })
+
+    if (!store) {
+      throw new NotFoundException(
+        'Store tidak ditemukan',
+      )
+    }
+
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: dto.userId,
+        },
+      })
+
+    if (!user) {
+      throw new NotFoundException(
+        'Kasir tidak ditemukan',
+      )
+    }
+
+    const active =
       await this.prisma.shift.findFirst({
         where: {
+          storeId: dto.storeId,
           userId: dto.userId,
           status: ShiftStatus.OPEN,
         },
       })
 
-    if (existing) {
-      throw new BadRequestException(
-        'Masih ada shift yang terbuka',
+    if (active) {
+      throw new ConflictException(
+        'Shift masih terbuka',
       )
     }
 
     return this.prisma.shift.create({
       data: {
-        storeId: dto.storeId,
-        userId: dto.userId,
+        storeId:
+          dto.storeId,
+
+        userId:
+          dto.userId,
+
         openingCash:
-          dto.openingCash,
+          Number(
+            dto.openingCash,
+          ),
+
+        status:
+          ShiftStatus.OPEN,
+      },
+
+      include: {
+        user: true,
       },
     })
   }
 
   async close(
-    shiftId: string,
+    id: string,
     closingCash: number,
   ) {
     const shift =
       await this.prisma.shift.findUnique({
         where: {
-          id: shiftId,
+          id,
         },
       })
 
@@ -67,25 +107,23 @@ export class ShiftService {
       shift.status ===
       ShiftStatus.CLOSED
     ) {
-      throw new BadRequestException(
-        'Shift sudah ditutup',
+      throw new ConflictException(
+        'Shift already sudah ditutup',
       )
     }
 
-    const cashSales =
+    const sales =
       await this.prisma.transaction.aggregate({
         _sum: {
           total: true,
         },
 
         where: {
-          cashierId:
-            shift.userId,
+          storeId:
+            shift.storeId,
 
-          paymentMethod:
-            PaymentMethod.CASH,
-
-          status: 'PAID',
+          status:
+            TransactionStatus.PAID,
 
           createdAt: {
             gte:
@@ -94,41 +132,57 @@ export class ShiftService {
         },
       })
 
-    const totalCashSales =
-      cashSales._sum.total ?? 0
+    const cashSales =
+      sales._sum.total ??
+      0
 
     const expectedCash =
-      shift.openingCash +
-      totalCashSales
+      Number(
+        shift.openingCash,
+      ) +
+      Number(
+        cashSales,
+      )
 
     const difference =
-      closingCash -
+      Number(
+        closingCash,
+      ) -
       expectedCash
 
-    const updatedShift =
+    const updated =
       await this.prisma.shift.update({
         where: {
-          id: shiftId,
+          id,
         },
 
         data: {
+          closingCash:
+            Number(
+              closingCash,
+            ),
+
+          closedAt:
+            new Date(),
+
           status:
             ShiftStatus.CLOSED,
+        },
 
-          closingCash,
+        include: {
+          user: true,
         },
       })
 
     return {
       shift:
-        updatedShift,
+        updated,
 
       summary: {
         openingCash:
           shift.openingCash,
 
-        cashSales:
-          totalCashSales,
+        cashSales,
 
         expectedCash,
 
@@ -148,7 +202,11 @@ export class ShiftService {
       },
 
       include: {
-        user: true,
+        user: {
+          select: {
+            name: true,
+          },
+        },
       },
 
       orderBy: {
@@ -161,24 +219,14 @@ export class ShiftService {
   async findOne(
     id: string,
   ) {
-    const shift =
-      await this.prisma.shift.findUnique({
-        where: {
-          id,
-        },
+    return this.prisma.shift.findUnique({
+      where: {
+        id,
+      },
 
-        include: {
-          user: true,
-          store: true,
-        },
-      })
-
-    if (!shift) {
-      throw new NotFoundException(
-        'Shift tidak ditemukan',
-      )
-    }
-
-    return shift
+      include: {
+        user: true,
+      },
+    })
   }
 }
