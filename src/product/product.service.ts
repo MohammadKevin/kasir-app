@@ -13,14 +13,38 @@ import { UpdateProductDto } from './dto/update-product.dto'
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
+
+  private MAX_INT =
+    2147483647
+
+  private createBarcode(
+    productId?: string,
+  ) {
+    return (
+      `${Date.now()}` +
+      `${Math.floor(
+        1000 +
+        Math.random() * 9000,
+      )}` +
+      `${productId?.slice(
+        0,
+        4,
+      ) ?? ''}`
+    )
+  }
+
+  private createSku() {
+    return `PRD-${Math.floor(
+      100000 +
+      Math.random() *
+      900000,
+    )}`
+  }
 
   async create(
     dto: CreateProductDto,
   ) {
-    const MAX_INT =
-      2147483647
-
     const store =
       await this.prisma.store.findUnique({
         where: {
@@ -54,7 +78,7 @@ export class ProductService {
 
     if (
       dto.costPrice >
-      MAX_INT
+      this.MAX_INT
     ) {
       throw new ConflictException(
         'Harga modal terlalu besar',
@@ -63,7 +87,7 @@ export class ProductService {
 
     if (
       dto.sellingPrice >
-      MAX_INT
+      this.MAX_INT
     ) {
       throw new ConflictException(
         'Harga jual terlalu besar',
@@ -72,63 +96,91 @@ export class ProductService {
 
     const sku =
       dto.sku ??
-      `PRD-${Math.floor(
-        100000 +
-        Math.random() *
-        900000,
-      )}`
+      this.createSku()
+
+    const skuExist =
+      await this.prisma.product.findFirst({
+        where: {
+          storeId:
+            dto.storeId,
+          sku,
+        },
+      })
+
+    if (skuExist) {
+      throw new ConflictException(
+        'SKU sudah digunakan',
+      )
+    }
+
+    const product =
+      await this.prisma.product.create({
+        data: {
+          storeId:
+            dto.storeId,
+
+          categoryId:
+            dto.categoryId,
+
+          name:
+            dto.name,
+
+          image:
+            dto.image ??
+            null,
+
+          sku,
+
+          barcode:
+            null,
+
+          description:
+            dto.description ??
+            null,
+
+          costPrice:
+            Number(
+              dto.costPrice,
+            ),
+
+          sellingPrice:
+            Number(
+              dto.sellingPrice,
+            ),
+
+          stock:
+            dto.stock ??
+            0,
+
+          minimumStock:
+            dto.minimumStock ??
+            0,
+
+          isActive:
+            dto.isActive ??
+            true,
+        },
+
+        include: {
+          category:
+            true,
+        },
+      })
 
     const barcode =
       dto.barcode ??
-      `${Date.now()}${Math.floor(
-        Math.random() *
-        1000,
-      )}`
+      this.createBarcode(
+        product.id,
+      )
 
-    return this.prisma.product.create({
+    return this.prisma.product.update({
+      where: {
+        id:
+          product.id,
+      },
+
       data: {
-        storeId:
-          dto.storeId,
-
-        categoryId:
-          dto.categoryId,
-
-        name:
-          dto.name,
-
-        image:
-          dto.image ??
-          null,
-
-        sku,
-
         barcode,
-
-        description:
-          dto.description ??
-          null,
-
-        costPrice:
-          Number(
-            dto.costPrice,
-          ),
-
-        sellingPrice:
-          Number(
-            dto.sellingPrice,
-          ),
-
-        stock:
-          dto.stock ??
-          0,
-
-        minimumStock:
-          dto.minimumStock ??
-          0,
-
-        isActive:
-          dto.isActive ??
-          true,
       },
 
       include: {
@@ -144,11 +196,13 @@ export class ProductService {
     return this.prisma.product.findMany({
       where: {
         storeId,
-        deletedAt: null,
+        deletedAt:
+          null,
       },
 
       include: {
-        category: true,
+        category:
+          true,
       },
 
       orderBy: {
@@ -170,7 +224,8 @@ export class ProductService {
         },
 
         include: {
-          category: true,
+          category:
+            true,
         },
       })
 
@@ -195,13 +250,14 @@ export class ProductService {
         },
 
         include: {
-          category: true,
+          category:
+            true,
         },
       })
 
     if (!product) {
       throw new NotFoundException(
-        'Produk tidak ditemukan',
+        'Barcode tidak ditemukan',
       )
     }
 
@@ -211,7 +267,9 @@ export class ProductService {
   async generateBarcode(
     id: string,
   ) {
-    await this.findOne(id)
+    await this.findOne(
+      id,
+    )
 
     return this.prisma.product.update({
       where: {
@@ -220,10 +278,9 @@ export class ProductService {
 
       data: {
         barcode:
-          `${Date.now()}${Math.floor(
-            Math.random() *
-            1000,
-          )}`,
+          this.createBarcode(
+            id,
+          ),
       },
     })
   }
@@ -236,29 +293,26 @@ export class ProductService {
         where: {
           storeId,
 
-          barcode:
-            null,
-
           deletedAt:
             null,
         },
       })
 
-    for (const p of products) {
+    for (
+      const p
+      of products
+    ) {
       await this.prisma.product.update({
         where: {
-          id: p.id,
+          id:
+            p.id,
         },
 
         data: {
           barcode:
-            `${Date.now()}${Math.floor(
-              Math.random() *
-              1000,
-            )}${p.id.slice(
-              0,
-              4,
-            )}`,
+            this.createBarcode(
+              p.id,
+            ),
         },
       })
     }
@@ -273,29 +327,9 @@ export class ProductService {
     id: string,
     dto: UpdateProductDto,
   ) {
-    const product =
-      await this.findOne(id)
-
-    if (
-      dto.categoryId
-    ) {
-      const category =
-        await this.prisma.category.findFirst({
-          where: {
-            id:
-              dto.categoryId,
-
-            storeId:
-              product.storeId,
-          },
-        })
-
-      if (!category) {
-        throw new NotFoundException(
-          'Category tidak ditemukan',
-        )
-      }
-    }
+    await this.findOne(
+      id,
+    )
 
     return this.prisma.product.update({
       where: {
@@ -307,7 +341,8 @@ export class ProductService {
       },
 
       include: {
-        category: true,
+        category:
+          true,
       },
     })
   }
@@ -316,7 +351,9 @@ export class ProductService {
     id: string,
     stock: number,
   ) {
-    await this.findOne(id)
+    await this.findOne(
+      id,
+    )
 
     return this.prisma.product.update({
       where: {
@@ -332,7 +369,9 @@ export class ProductService {
   async remove(
     id: string,
   ) {
-    await this.findOne(id)
+    await this.findOne(
+      id,
+    )
 
     await this.prisma.product.update({
       where: {
