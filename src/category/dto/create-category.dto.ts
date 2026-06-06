@@ -1,8 +1,12 @@
-import { IsOptional, IsString, IsNotEmpty } from 'class-validator'
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator'
 
 export class CreateCategoryDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   storeId!: string
 
   @IsString()
@@ -12,7 +16,4 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   description?: string
-
-  @IsOptional()
-  categoryId?: string
 }

@@ -1,19 +1,18 @@
 import {
   IsBoolean,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
-  IsNotEmpty,
+  Min,
 } from 'class-validator'
 
 export class CreateProductDto {
   @IsUUID()
-  @IsNotEmpty()
   storeId!: string
 
   @IsUUID()
-  @IsNotEmpty()
   categoryId!: string
 
   @IsString()
@@ -37,17 +36,21 @@ export class CreateProductDto {
   description?: string
 
   @IsInt()
+  @Min(0)
   costPrice!: number
 
   @IsInt()
+  @Min(0)
   sellingPrice!: number
 
   @IsOptional()
   @IsInt()
+  @Min(0)
   stock?: number
 
   @IsOptional()
   @IsInt()
+  @Min(0)
   minimumStock?: number
 
   @IsOptional()
