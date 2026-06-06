@@ -13,15 +13,19 @@ import { UpdateProductDto } from './dto/update-product.dto'
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async create(
     dto: CreateProductDto,
   ) {
+    const MAX_INT =
+      2147483647
+
     const store =
       await this.prisma.store.findUnique({
         where: {
-          id: dto.storeId,
+          id:
+            dto.storeId,
         },
       })
 
@@ -34,8 +38,11 @@ export class ProductService {
     const category =
       await this.prisma.category.findFirst({
         where: {
-          id: dto.categoryId,
-          storeId: dto.storeId,
+          id:
+            dto.categoryId,
+
+          storeId:
+            dto.storeId,
         },
       })
 
@@ -45,50 +52,38 @@ export class ProductService {
       )
     }
 
+    if (
+      dto.costPrice >
+      MAX_INT
+    ) {
+      throw new ConflictException(
+        'Harga modal terlalu besar',
+      )
+    }
+
+    if (
+      dto.sellingPrice >
+      MAX_INT
+    ) {
+      throw new ConflictException(
+        'Harga jual terlalu besar',
+      )
+    }
+
     const sku =
       dto.sku ??
       `PRD-${Math.floor(
         100000 +
-          Math.random() *
-            900000,
+        Math.random() *
+        900000,
       )}`
 
     const barcode =
       dto.barcode ??
       `${Date.now()}${Math.floor(
         Math.random() *
-          1000,
+        1000,
       )}`
-
-    const skuExist =
-      await this.prisma.product.findFirst({
-        where: {
-          storeId:
-            dto.storeId,
-          sku,
-        },
-      })
-
-    if (skuExist) {
-      throw new ConflictException(
-        'SKU sudah digunakan',
-      )
-    }
-
-    const barcodeExist =
-      await this.prisma.product.findFirst({
-        where: {
-          storeId:
-            dto.storeId,
-          barcode,
-        },
-      })
-
-    if (barcodeExist) {
-      throw new ConflictException(
-        'Barcode sudah digunakan',
-      )
-    }
 
     return this.prisma.product.create({
       data: {
@@ -114,13 +109,18 @@ export class ProductService {
           null,
 
         costPrice:
-          dto.costPrice,
+          Number(
+            dto.costPrice,
+          ),
 
         sellingPrice:
-          dto.sellingPrice,
+          Number(
+            dto.sellingPrice,
+          ),
 
         stock:
-          dto.stock ?? 0,
+          dto.stock ??
+          0,
 
         minimumStock:
           dto.minimumStock ??
@@ -132,7 +132,8 @@ export class ProductService {
       },
 
       include: {
-        category: true,
+        category:
+          true,
       },
     })
   }
@@ -221,7 +222,7 @@ export class ProductService {
         barcode:
           `${Date.now()}${Math.floor(
             Math.random() *
-              1000,
+            1000,
           )}`,
       },
     })
@@ -253,7 +254,7 @@ export class ProductService {
           barcode:
             `${Date.now()}${Math.floor(
               Math.random() *
-                1000,
+              1000,
             )}${p.id.slice(
               0,
               4,

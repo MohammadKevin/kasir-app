@@ -4,8 +4,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator'
+
+import { Type } from 'class-transformer'
 
 export class UpdateProductDto {
   @IsOptional()
@@ -33,21 +36,27 @@ export class UpdateProductDto {
   description?: string
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(2147483647)
   costPrice?: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(2147483647)
   sellingPrice?: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   stock?: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   minimumStock?: number

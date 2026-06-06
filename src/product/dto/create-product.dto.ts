@@ -5,8 +5,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator'
+
+import { Type } from 'class-transformer'
 
 export class CreateProductDto {
   @IsUUID()
@@ -35,20 +38,26 @@ export class CreateProductDto {
   @IsString()
   description?: string
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(2147483647)
   costPrice!: number
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(2147483647)
   sellingPrice!: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   stock?: number
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   minimumStock?: number
