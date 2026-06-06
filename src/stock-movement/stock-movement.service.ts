@@ -9,6 +9,10 @@ import {
 } from '../prisma/prisma.service'
 
 import {
+  Prisma,
+} from '@prisma/client'
+
+import {
   CreateStockMovementDto,
 } from './dto/create-stock-movement.dto'
 
@@ -22,10 +26,12 @@ export class StockMovementService {
     dto: CreateStockMovementDto,
   ) {
 
-    let product =
+    let product:
+      Prisma.ProductGetPayload<{}> |
+      null =
       null
 
-    // SUPPORT SCAN BARCODE
+    // SCAN BARCODE
     if (
       dto.barcode
     ) {
@@ -44,7 +50,7 @@ export class StockMovementService {
         })
     }
 
-    // SUPPORT MANUAL PRODUCT
+    // MANUAL PRODUCT
     if (
       !product &&
       dto.productId
@@ -78,9 +84,10 @@ export class StockMovementService {
       ) => {
 
         let stock =
-          product.stock
+          Number(
+            product.stock,
+          )
 
-        // STOCK IN
         if (
           dto.type ===
           'IN'
@@ -89,14 +96,12 @@ export class StockMovementService {
             dto.qty
         }
 
-        // STOCK OUT / DAMAGED
         if (
           dto.type ===
             'OUT' ||
           dto.type ===
             'DAMAGED'
         ) {
-
           if (
             stock <
             dto.qty
@@ -124,7 +129,6 @@ export class StockMovementService {
 
         const history =
           await tx.stockMovement.create({
-
             data: {
               storeId:
                 dto.storeId,

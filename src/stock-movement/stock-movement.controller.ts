@@ -1,97 +1,96 @@
 import {
- Body,
- Controller,
- Get,
- Param,
- Post,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
 } from '@nestjs/common'
 
 import {
- StockMovementService,
+  StockMovementService,
 } from './stock-movement.service'
 
 import {
- CreateStockMovementDto,
+  CreateStockMovementDto,
 } from './dto/create-stock-movement.dto'
 
 import {
- ScanStockDto,
+  ScanStockDto,
 } from './dto/scan-stock.dto'
 
 @Controller(
-'stock-movements',
+  'stock-movements',
 )
 export class StockMovementController {
+  constructor(
+    private readonly stockMovementService:
+      StockMovementService,
+  ) {}
 
-constructor(
-private readonly stockMovementService:
-StockMovementService,
-){}
+  @Post()
+  create(
+    @Body()
+    dto:
+      CreateStockMovementDto,
+  ) {
+    return this.stockMovementService.create(
+      dto,
+    )
+  }
 
-@Post()
-create(
-@Body()
-dto:
-CreateStockMovementDto,
-){
-return this
-.stockMovementService
-.create(dto)
-}
+  @Post(
+    'scan',
+  )
+  scan(
+    @Body()
+    dto:
+      ScanStockDto,
+  ) {
+    return this.stockMovementService.create({
+      storeId:
+        dto.storeId,
 
-@Post(
-'scan',
-)
-scan(
-@Body()
-dto:
-ScanStockDto,
-){
+      barcode:
+        dto.barcode,
 
-return this
-.stockMovementService
-.create(
-dto,
-)
+      qty:
+        dto.qty,
 
-}
+      type:
+        dto.type,
 
-@Get(
-'store/:storeId',
-)
-findAll(
-@Param(
-'storeId',
-)
-storeId:
-string,
-){
+      note:
+        dto.note,
+    })
+  }
 
-return this
-.stockMovementService
-.findAll(
-storeId,
-)
+  @Get(
+    'store/:storeId',
+  )
+  findAll(
+    @Param(
+      'storeId',
+    )
+    storeId:
+      string,
+  ) {
+    return this.stockMovementService.findAll(
+      storeId,
+    )
+  }
 
-}
-
-@Get(
-'product/:productId',
-)
-findByProduct(
-@Param(
-'productId',
-)
-productId:
-string,
-){
-
-return this
-.stockMovementService
-.findByProduct(
-productId,
-)
-
-}
-
+  @Get(
+    'product/:productId',
+  )
+  findByProduct(
+    @Param(
+      'productId',
+    )
+    productId:
+      string,
+  ) {
+    return this.stockMovementService.findByProduct(
+      productId,
+    )
+  }
 }
