@@ -10,7 +10,6 @@ import {
 } from '@prisma/client'
 
 import { PrismaService } from '../prisma/prisma.service'
-
 import { CreateTransactionDto } from './dto/create-transaction.dto'
 
 @Injectable()
@@ -130,20 +129,19 @@ export class TransactionService {
           where: {
             productId:
               product.id,
-
             discount: {
-              isActive:
-                true,
+              is: {
+                isActive: true,
+              },
             },
           },
-
           include: {
             discount: true,
           },
         })
 
       if (
-        activeDiscount
+        activeDiscount && activeDiscount.discount
       ) {
         if (
           activeDiscount
