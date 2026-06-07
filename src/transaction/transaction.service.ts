@@ -16,279 +16,87 @@ import { CreateTransactionDto } from './dto/create-transaction.dto'
 export class TransactionService {
   constructor(
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
-  async create(
-    dto: CreateTransactionDto,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id: dto.storeId,
-        },
-      })
+  private generateInvoiceNumber(storeId: string): string {
+    const storeCode = storeId.slice(0, 4).toUpperCase();
+    const timeCode = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 900 + 100);
+    return `INV-${storeCode}-${timeCode}${random}`;
+  }
 
-    if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
-    }
+  async create(dto: CreateTransactionDto) {
+    return await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUnique({ where: { id: dto.storeId } });
+      if (!store) throw new NotFoundException('Store tidak ditemukan');
 
-    const cashier =
-      await this.prisma.user.findUnique({
-        where: {
-          id: dto.cashierId,
-        },
-      })
+      const cashier = await tx.user.findUnique({ where: { id: dto.cashierId } });
+      if (!cashier) throw new NotFoundException('Cashier tidak ditemukan');
 
-    if (!cashier) {
-      throw new NotFoundException(
-        'Cashier tidak ditemukan',
-      )
-    }
-
-    let customerId =
-      dto.customerId ?? null
-
-    if (
-      !customerId &&
-      dto.phone
-    ) {
-      let customer =
-        await this.prisma.customer.findFirst({
-          where: {
-            storeId:
-              dto.storeId,
-
-            phone:
-              dto.phone,
-          },
-        })
-
-      if (
-        !customer &&
-        dto.saveCustomer
-      ) {
-        customer =
-          await this.prisma.customer.create({
-            data: {
-              storeId:
-                dto.storeId,
-
-              name:
-                dto.customerName ??
-                'Customer',
-
-              phone:
-                dto.phone,
-            },
-          })
-      }
-
-      customerId =
-        customer?.id ?? null
-    }
-
-    const invoiceNumber =
-      `INV-${Date.now()}`
-
-    let subtotal = 0
-    let totalDiscount = 0
-
-    const itemsData: Prisma.TransactionItemCreateManyTransactionInput[] =
-      []
-
-    for (const item of dto.items) {
-      const product =
-        await this.prisma.product.findUnique({
-          where: {
-            id:
-              item.productId,
-          },
-        })
-
-      if (!product) {
-        throw new NotFoundException(
-          `Produk ${item.productId} tidak ditemukan`,
-        )
-      }
-
-      if (
-        product.stock <
-        item.quantity
-      ) {
-        throw new BadRequestException(
-          `${product.name} stok tidak cukup`,
-        )
-      }
-
-      let masterDiscount = 0
-
-      const activeDiscount =
-        await this.prisma.discountProduct.findFirst({
-          where: {
-            productId:
-              product.id,
-            discount: {
-              is: {
-                isActive: true,
-              },
-            },
-          },
-          include: {
-            discount: true,
-          },
-        })
-
-      if (
-        activeDiscount && activeDiscount.discount
-      ) {
-        if (
-          activeDiscount
-            .discount
-            .type ===
-          'PERCENTAGE'
-        ) {
-          masterDiscount =
-            Math.floor(
-              (product.sellingPrice *
-                activeDiscount
-                  .discount
-                  .value) /
-              100,
-            )
-        } else {
-          masterDiscount =
-            Math.floor(activeDiscount.discount.value)
+      let customerId = dto.customerId ?? null;
+      if (!customerId && dto.phone) {
+        let customer = await tx.customer.findFirst({ where: { storeId: dto.storeId, phone: dto.phone } });
+        if (!customer && dto.saveCustomer) {
+          customer = await tx.customer.create({ 
+            data: { storeId: dto.storeId, name: dto.customerName ?? 'Customer', phone: dto.phone } 
+          });
         }
+        customerId = customer?.id ?? null;
       }
 
-      const cashierDiscount =
-        Math.floor(item.cashierDiscount ?? 0)
+      const itemsData = [];
+      let subtotal = 0;
+      let totalDiscount = 0;
 
-      const finalPrice =
-        Math.floor(product.sellingPrice - masterDiscount - cashierDiscount)
+      for (const item of dto.items) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product || product.stock < item.quantity) {
+          throw new BadRequestException(`Produk ${product?.name || item.productId} tidak tersedia`);
+        }
 
-      if (
-        finalPrice < 0
-      ) {
-        throw new BadRequestException(
-          `${product.name} harga akhir tidak valid`,
-        )
+        const activeDiscount = await tx.discountProduct.findFirst({
+            where: { productId: product.id, discount: { is: { isActive: true } } },
+            include: { discount: true }
+        });
+
+        let masterDiscount = 0;
+        if (activeDiscount?.discount) {
+            masterDiscount = activeDiscount.discount.type === 'PERCENTAGE' 
+                ? Math.floor((product.sellingPrice * activeDiscount.discount.value) / 100) 
+                : activeDiscount.discount.value;
+        }
+
+        const cashierDiscount = Math.floor(item.cashierDiscount ?? 0);
+        const finalPrice = product.sellingPrice - masterDiscount - cashierDiscount;
+        
+        if (finalPrice < 0) throw new BadRequestException(`${product.name} harga tidak valid`);
+
+        subtotal += finalPrice * item.quantity;
+        totalDiscount += (masterDiscount + cashierDiscount) * item.quantity;
+
+        const itemsData: Prisma.TransactionItemCreateManyTransactionInput[] = [];
+
+        await tx.product.update({
+          where: { id: product.id },
+          data: { stock: { decrement: item.quantity } }
+        });
       }
-
-      const itemSubtotal =
-        Math.floor(finalPrice * item.quantity)
-
-      subtotal +=
-        itemSubtotal
-
-      totalDiscount +=
-        Math.floor((masterDiscount + cashierDiscount) * item.quantity)
-
-      itemsData.push({
-        productId:
-          product.id,
-
-        quantity:
-          Math.floor(item.quantity),
-
-        originalPrice:
-          Math.floor(product.sellingPrice),
-
-        masterDiscount:
-          Math.floor(masterDiscount),
-
-        cashierDiscount:
-          Math.floor(cashierDiscount),
-
-        finalPrice:
-          Math.floor(finalPrice),
-
-        subtotal:
-          Math.floor(itemSubtotal),
-      })
-    }
-
-    const total =
-      Math.floor(subtotal)
-
-    if (
-      Math.floor(dto.paidAmount) <
-      total
-    ) {
-      throw new BadRequestException(
-        'Uang pembayaran kurang',
-      )
-    }
-
-    const changeAmount =
-      Math.floor(dto.paidAmount - total)
-
-    const transaction =
-      await this.prisma.transaction.create({
+      return await tx.transaction.create({
         data: {
-          invoiceNumber,
-
+          invoiceNumber: this.generateInvoiceNumber(dto.storeId),
           subtotal,
-
           totalDiscount,
-
-          total,
-
-          paidAmount:
-            Math.floor(dto.paidAmount),
-
-          changeAmount,
-
-          paymentMethod:
-            dto.paymentMethod,
-
-          storeId:
-            dto.storeId,
-
-          cashierId:
-            dto.cashierId,
-
+          total: subtotal - totalDiscount,
+          paidAmount: dto.paidAmount,
+          changeAmount: dto.paidAmount - (subtotal - totalDiscount),
+          paymentMethod: dto.paymentMethod,
+          storeId: dto.storeId,
+          cashierId: dto.cashierId,
           customerId,
-
-          items: {
-            createMany: {
-              data:
-                itemsData,
-            },
-          },
-        },
-
-        include: {
-          cashier:
-            true,
-
-          customer:
-            true,
-
-          items:
-            true,
-        },
-      })
-
-    for (const item of dto.items) {
-      await this.prisma.product.update({
-        where: {
-          id:
-            item.productId,
-        },
-
-        data: {
-          stock: {
-            decrement:
-              item.quantity,
-          },
-        },
-      })
-    }
-
-    return transaction
+          items: { createMany: { data: itemsData } }
+        }
+      });
+    });
   }
 
   async findAll(
