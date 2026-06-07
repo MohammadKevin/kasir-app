@@ -10,9 +10,7 @@ import {
 } from '@nestjs/common'
 
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
-
 import { TransactionService } from './transaction.service'
-
 import { CreateTransactionDto } from './dto/create-transaction.dto'
 import { VoidTransactionDto } from './dto/void-transaction.dto'
 
@@ -26,18 +24,12 @@ export class TransactionController {
   @Post()
   create(
     @Req() req: any,
-
-    @Body()
-    dto: CreateTransactionDto,
+    @Body() dto: CreateTransactionDto,
   ) {
     return this.transactionService.create({
       ...dto,
-
-      cashierId:
-        req.user.id,
-
-      storeId:
-        req.user.storeId,
+      cashierId: dto.cashierId || req.user?.id,
+      storeId: dto.storeId || req.user?.storeId || req.body?.storeId,
     })
   }
 
@@ -76,12 +68,12 @@ export class TransactionController {
   }
 
   @Get(':id/receipt')
-receipt(
-  @Param('id')
-  id: string,
-) {
-  return this.transactionService.receipt(
-    id,
-  )
-}
+  receipt(
+    @Param('id')
+    id: string,
+  ) {
+    return this.transactionService.receipt(
+      id,
+    )
+  }
 }
