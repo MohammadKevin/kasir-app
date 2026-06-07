@@ -15,6 +15,9 @@ export class PrismaService
     OnModuleInit,
     OnModuleDestroy
 {
+  findOne(id: string) {
+    throw new Error('Method not implemented.')
+  }
   cashier: any
   async onModuleInit() {
     await this.$connect()

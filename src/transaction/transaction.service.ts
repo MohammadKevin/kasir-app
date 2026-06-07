@@ -159,20 +159,15 @@ export class TransactionService {
             )
         } else {
           masterDiscount =
-            activeDiscount
-              .discount
-              .value
+            Math.floor(activeDiscount.discount.value)
         }
       }
 
       const cashierDiscount =
-        item.cashierDiscount ??
-        0
+        Math.floor(item.cashierDiscount ?? 0)
 
       const finalPrice =
-        product.sellingPrice -
-        masterDiscount -
-        cashierDiscount
+        Math.floor(product.sellingPrice - masterDiscount - cashierDiscount)
 
       if (
         finalPrice < 0
@@ -183,43 +178,43 @@ export class TransactionService {
       }
 
       const itemSubtotal =
-        finalPrice *
-        item.quantity
+        Math.floor(finalPrice * item.quantity)
 
       subtotal +=
         itemSubtotal
 
       totalDiscount +=
-        (masterDiscount +
-          cashierDiscount) *
-        item.quantity
+        Math.floor((masterDiscount + cashierDiscount) * item.quantity)
 
       itemsData.push({
         productId:
           product.id,
 
         quantity:
-          item.quantity,
+          Math.floor(item.quantity),
 
         originalPrice:
-          product.sellingPrice,
+          Math.floor(product.sellingPrice),
 
-        masterDiscount,
+        masterDiscount:
+          Math.floor(masterDiscount),
 
-        cashierDiscount,
+        cashierDiscount:
+          Math.floor(cashierDiscount),
 
-        finalPrice,
+        finalPrice:
+          Math.floor(finalPrice),
 
         subtotal:
-          itemSubtotal,
+          Math.floor(itemSubtotal),
       })
     }
 
     const total =
-      subtotal
+      Math.floor(subtotal)
 
     if (
-      dto.paidAmount <
+      Math.floor(dto.paidAmount) <
       total
     ) {
       throw new BadRequestException(
@@ -228,8 +223,7 @@ export class TransactionService {
     }
 
     const changeAmount =
-      dto.paidAmount -
-      total
+      Math.floor(dto.paidAmount - total)
 
     const transaction =
       await this.prisma.transaction.create({
@@ -243,7 +237,7 @@ export class TransactionService {
           total,
 
           paidAmount:
-            dto.paidAmount,
+            Math.floor(dto.paidAmount),
 
           changeAmount,
 
