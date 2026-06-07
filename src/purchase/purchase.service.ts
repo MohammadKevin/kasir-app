@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service'
 
 import { CreatePurchaseDto } from './dto/create-purchase.dto'
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PurchaseService {
@@ -13,136 +14,79 @@ export class PurchaseService {
         private readonly prisma: PrismaService,
     ) { }
 
-    async create(
-        dto: CreatePurchaseDto,
-    ) {
-        const supplier =
-            await this.prisma.supplier.findUnique({
-                where: {
-                    id: dto.supplierId,
-                },
+    private generateInvoice(storeId: string): string {
+        const code = storeId.slice(0, 4).toUpperCase();
+        const time = Date.now().toString().slice(-6);
+        const rand = Math.floor(Math.random() * 900 + 100);
+        return `INV-${code}-${time}${rand}`;
+    }
+
+    async create(dto: CreatePurchaseDto) {
+        return await this.prisma.$transaction(async (tx) => {
+            const supplier = await tx.supplier.findUnique({
+                where: { id: dto.supplierId },
             })
 
-        if (!supplier) {
-            throw new NotFoundException(
-                'Supplier tidak ditemukan',
-            )
-        }
+            if (!supplier) {
+                throw new NotFoundException('Supplier tidak ditemukan')
+            }
 
-        let total = 0
+            let total = 0
+            const itemsData: Prisma.PurchaseItemCreateManyPurchaseInput[] = []
 
-        const itemsData: {
-            productId: string
-            quantity: number
-            costPrice: number
-            subtotal: number
-        }[] = []
+            for (const item of dto.items) {
+                const product = await tx.product.findUnique({
+                    where: { id: item.productId },
+                })
 
-        for (const item of dto.items) {
-            const product =
-                await this.prisma.product.findUnique({
-                    where: {
-                        id: item.productId,
+                if (!product) {
+                    throw new NotFoundException(`Produk ${item.productId} tidak ditemukan`)
+                }
+
+                const subtotal = item.quantity * item.costPrice
+                total += subtotal
+
+                itemsData.push({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    costPrice: item.costPrice,
+                    subtotal,
+                })
+
+                // Update stok produk secara otomatis
+                await tx.product.update({
+                    where: { id: product.id },
+                    data: {
+                        stock: { increment: item.quantity },
+                        costPrice: item.costPrice // Optional: update harga beli terakhir
                     },
                 })
 
-            if (!product) {
-                throw new NotFoundException(
-                    `Produk ${item.productId} tidak ditemukan`,
-                )
+                // Catat pergerakan stok
+                await tx.stockMovement.create({
+                    data: {
+                        storeId: dto.storeId,
+                        productId: product.id,
+                        qty: item.quantity,
+                        type: 'IN',
+                        note: `Purchase ${dto.invoiceNumber || 'AUTO'}`
+                    }
+                })
             }
 
-            const subtotal =
-                item.quantity *
-                item.costPrice
-
-            total += subtotal
-
-            itemsData.push({
-                productId:
-                    item.productId,
-
-                quantity:
-                    item.quantity,
-
-                costPrice:
-                    item.costPrice,
-
-                subtotal,
-            })
-        }
-
-        const purchase =
-            await this.prisma.purchase.create({
+            return await tx.purchase.create({
                 data: {
-                    storeId:
-                        dto.storeId,
-
-                    supplierId:
-                        dto.supplierId,
-
-                    invoiceNumber:
-                        dto.invoiceNumber,
-
-                    note:
-                        dto.note,
-
+                    storeId: dto.storeId,
+                    supplierId: dto.supplierId,
+                    // Menggunakan invoice dari DTO, jika kosong baru generate otomatis
+                    invoiceNumber: dto.invoiceNumber || this.generateInvoice(dto.storeId),
+                    note: dto.note,
                     total,
-
-                    items: {
-                        create:
-                            itemsData,
-                    },
+                    items: { create: itemsData },
                 },
-
-                include: {
-                    supplier:
-                        true,
-
-                    items:
-                        true,
-                },
+                include: { supplier: true, items: true },
             })
-
-        for (const item of dto.items) {
-            await this.prisma.product.update({
-                where: {
-                    id:
-                        item.productId,
-                },
-
-                data: {
-                    stock: {
-                        increment:
-                            item.quantity,
-                    },
-
-                    costPrice:
-                        item.costPrice,
-                },
-            })
-
-            await this.prisma.stockMovement.create({
-                data: {
-                    storeId:
-                        dto.storeId,
-
-                    productId:
-                        item.productId,
-
-                    qty:
-                        item.quantity,
-
-                    type:
-                        'IN',
-
-                    note:
-                        `Purchase ${dto.invoiceNumber}`,
-                },
-            })
-        }
-
-        return purchase
+        })
     }
 
     async findAll(
