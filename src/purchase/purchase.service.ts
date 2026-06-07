@@ -23,46 +23,31 @@ export class PurchaseService {
 
     async create(dto: CreatePurchaseDto) {
         return await this.prisma.$transaction(async (tx) => {
-            const supplier = await tx.supplier.findUnique({
-                where: { id: dto.supplierId },
-            })
+            const supplier = await tx.supplier.findUnique({ where: { id: dto.supplierId } });
+            if (!supplier) throw new NotFoundException('Supplier tidak ditemukan');
 
-            if (!supplier) {
-                throw new NotFoundException('Supplier tidak ditemukan')
-            }
-
-            let total = 0
-            const itemsData: Prisma.PurchaseItemCreateManyPurchaseInput[] = []
+            let total = 0;
+            const itemsData: Prisma.PurchaseItemCreateManyPurchaseInput[] = [];
 
             for (const item of dto.items) {
-                const product = await tx.product.findUnique({
-                    where: { id: item.productId },
-                })
+                const product = await tx.product.findUnique({ where: { id: item.productId } });
+                if (!product) throw new NotFoundException(`Produk ${item.productId} tidak ditemukan`);
 
-                if (!product) {
-                    throw new NotFoundException(`Produk ${item.productId} tidak ditemukan`)
-                }
-
-                const subtotal = item.quantity * item.costPrice
-                total += subtotal
+                const subtotal = item.quantity * item.costPrice;
+                total += subtotal;
 
                 itemsData.push({
                     productId: item.productId,
                     quantity: item.quantity,
                     costPrice: item.costPrice,
                     subtotal,
-                })
+                });
 
-                // Update stok produk secara otomatis
                 await tx.product.update({
                     where: { id: product.id },
-                    data: {
-                        stock: { increment: item.quantity },
-                        costPrice: item.costPrice // Optional: update harga beli terakhir
-                    },
-                })
+                    data: { stock: { increment: item.quantity }, costPrice: item.costPrice }
+                });
 
-                // Catat pergerakan stok
                 await tx.stockMovement.create({
                     data: {
                         storeId: dto.storeId,
@@ -71,22 +56,20 @@ export class PurchaseService {
                         type: 'IN',
                         note: `Purchase ${dto.invoiceNumber || 'AUTO'}`
                     }
-                })
+                });
             }
 
             return await tx.purchase.create({
                 data: {
                     storeId: dto.storeId,
                     supplierId: dto.supplierId,
-                    // Menggunakan invoice dari DTO, jika kosong baru generate otomatis
                     invoiceNumber: dto.invoiceNumber || this.generateInvoice(dto.storeId),
                     note: dto.note,
                     total,
                     items: { create: itemsData },
                 },
-                include: { supplier: true, items: true },
-            })
-        })
+            });
+        });
     }
 
     async findAll(
