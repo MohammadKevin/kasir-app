@@ -158,86 +158,157 @@ export class StoreService {
   }
 
   async remove(
-    adminId: string,
-    id: string,
-  ) {
-    const store =
-      await this.prisma.store.findFirst({
+  adminId: string,
+  id: string,
+) {
+  const store =
+    await this.prisma.store.findFirst({
+      where: {
+        id,
+        adminId,
+      },
+    })
+
+  if (!store) {
+    throw new NotFoundException(
+      'Store tidak ditemukan',
+    )
+  }
+
+  await this.prisma.$transaction(
+    async (tx) => {
+
+      await tx.auditLog.deleteMany({
         where: {
-          id,
-          adminId,
+          user: {
+            storeId: id,
+          },
         },
       })
 
-    if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
-    }
+      await tx.shift.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
 
-    await this.prisma.$transaction(
-      async (tx) => {
-        await tx.auditLog.deleteMany({
-          where: {
-            user: {
-              storeId: id,
-            },
-          },
-        })
-
-        await tx.shift.deleteMany({
-          where: {
+      await tx.transactionItem.deleteMany({
+        where: {
+          transaction: {
             storeId: id,
           },
-        })
+        },
+      })
 
-        await tx.transactionItem.deleteMany({
-          where: {
-            transaction: {
-              storeId: id,
+      await tx.transaction.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.discountProduct.deleteMany({
+        where: {
+          OR: [
+            {
+              product: {
+                storeId: id,
+              },
             },
-          },
-        })
+            {
+              discount: {
+                storeId: id,
+              },
+            },
+          ],
+        },
+      })
 
-        await tx.transaction.deleteMany({
-          where: {
+      await tx.stockMovement.deleteMany({
+        where: {
+          product: {
             storeId: id,
           },
-        })
+        },
+      })
 
-        await tx.discountProduct.deleteMany({
+      // TAMBAHAN kalau ada
+      if ((tx as any).cartItem) {
+        await (tx as any).cartItem.deleteMany({
           where: {
             product: {
               storeId: id,
             },
           },
         })
+      }
 
-        await tx.stockMovement.deleteMany({
+      if ((tx as any).purchaseItem) {
+        await (tx as any).purchaseItem.deleteMany({
           where: {
             product: {
               storeId: id,
             },
           },
         })
+      }
 
-        await tx.discount.deleteMany({
+      if ((tx as any).returnItem) {
+        await (tx as any).returnItem.deleteMany({
           where: {
-            storeId: id,
+            product: {
+              storeId: id,
+            },
           },
         })
+      }
 
-        await tx.product.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
-      },
-    )
+      await tx.discount.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
 
-    return {
-      message:
-        'Store beserta seluruh data berhasil dihapus',
-    }
+      await tx.product.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.category.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.supplier.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.customer.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.user.deleteMany({
+        where: {
+          storeId: id,
+        },
+      })
+
+      await tx.store.delete({
+        where: {
+          id,
+        },
+      })
+    },
+  )
+
+  return {
+    message:
+      'Store beserta seluruh data berhasil dihapus',
   }
+}
 }
