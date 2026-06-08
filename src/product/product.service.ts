@@ -13,7 +13,7 @@ import { UpdateProductDto } from './dto/update-product.dto'
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   private MAX_INT =
     2147483647
@@ -196,18 +196,21 @@ export class ProductService {
     return this.prisma.product.findMany({
       where: {
         storeId,
-        deletedAt:
-          null,
+        deletedAt: null,
       },
 
       include: {
-        category:
-          true,
+        category: true,
+
+        discounts: {
+          include: {
+            discount: true,
+          },
+        },
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
     })
   }
@@ -219,13 +222,17 @@ export class ProductService {
       await this.prisma.product.findFirst({
         where: {
           id,
-          deletedAt:
-            null,
+          deletedAt: null,
         },
 
         include: {
-          category:
-            true,
+          category: true,
+
+          discounts: {
+            include: {
+              discount: true,
+            },
+          },
         },
       })
 
@@ -245,13 +252,17 @@ export class ProductService {
       await this.prisma.product.findFirst({
         where: {
           barcode,
-          deletedAt:
-            null,
+          deletedAt: null,
         },
 
         include: {
-          category:
-            true,
+          category: true,
+
+          discounts: {
+            include: {
+              discount: true,
+            },
+          },
         },
       })
 
@@ -324,18 +335,18 @@ export class ProductService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
-  await this.findOne(id);
+    await this.findOne(id);
 
-  const updateData = Object.fromEntries(
-    Object.entries(dto).filter(([_, value]) => value !== undefined && value !== "")
-  );
+    const updateData = Object.fromEntries(
+      Object.entries(dto).filter(([_, value]) => value !== undefined && value !== "")
+    );
 
-  return this.prisma.product.update({
-    where: { id },
-    data: updateData,
-    include: { category: true },
-  });
-}
+    return this.prisma.product.update({
+      where: { id },
+      data: updateData,
+      include: { category: true },
+    });
+  }
 
   async updateStock(
     id: string,
