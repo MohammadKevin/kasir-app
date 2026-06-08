@@ -184,11 +184,13 @@ export class StoreService {
             },
           },
         })
+
         await tx.shift.deleteMany({
           where: {
             storeId: id,
           },
         })
+
         await tx.transactionItem.deleteMany({
           where: {
             transaction: {
@@ -196,36 +198,26 @@ export class StoreService {
             },
           },
         })
+
         await tx.transaction.deleteMany({
           where: {
             storeId: id,
           },
         })
-        await tx.stockMovement.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
+
         await tx.discountProduct.deleteMany({
           where: {
-            OR: [
-              {
-                product: {
-                  storeId: id,
-                },
-              },
-              {
-                discount: {
-                  storeId: id,
-                },
-              },
-            ],
+            product: {
+              storeId: id,
+            },
           },
         })
 
-        await tx.product.deleteMany({
+        await tx.stockMovement.deleteMany({
           where: {
-            storeId: id,
+            product: {
+              storeId: id,
+            },
           },
         })
 
@@ -235,33 +227,9 @@ export class StoreService {
           },
         })
 
-        await tx.category.deleteMany({
+        await tx.product.deleteMany({
           where: {
             storeId: id,
-          },
-        })
-
-        await tx.supplier.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
-
-        await tx.customer.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
-
-        await tx.user.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
-
-        await tx.store.delete({
-          where: {
-            id,
           },
         })
       },
