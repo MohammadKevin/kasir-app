@@ -323,29 +323,19 @@ export class ProductService {
     }
   }
 
-  async update(
-    id: string,
-    dto: UpdateProductDto,
-  ) {
-    await this.findOne(
-      id,
-    )
+  async update(id: string, dto: UpdateProductDto) {
+  await this.findOne(id);
 
-    return this.prisma.product.update({
-      where: {
-        id,
-      },
+  const updateData = Object.fromEntries(
+    Object.entries(dto).filter(([_, value]) => value !== undefined && value !== "")
+  );
 
-      data: {
-        ...dto,
-      },
-
-      include: {
-        category:
-          true,
-      },
-    })
-  }
+  return this.prisma.product.update({
+    where: { id },
+    data: updateData,
+    include: { category: true },
+  });
+}
 
   async updateStock(
     id: string,
