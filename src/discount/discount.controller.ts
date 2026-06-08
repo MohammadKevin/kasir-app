@@ -6,7 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common'
+
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
 
 import { DiscountService } from './discount.service'
 
@@ -15,6 +18,7 @@ import { UpdateDiscountDto } from './dto/update-discount.dto'
 import { AssignProductDto } from './dto/assign-product.dto'
 
 @Controller('discounts')
+@UseGuards(JwtAuthGuard)
 export class DiscountController {
   constructor(
     private readonly discountService: DiscountService,
@@ -43,7 +47,9 @@ export class DiscountController {
     @Param('id')
     id: string,
   ) {
-    return this.discountService.findOne(id)
+    return this.discountService.findOne(
+      id,
+    )
   }
 
   @Patch(':id')
@@ -61,11 +67,13 @@ export class DiscountController {
   }
 
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id')
     id: string,
   ) {
-    return this.discountService.remove(id)
+    return this.discountService.remove(
+      id,
+    )
   }
 
   @Post(':discountId/products')

@@ -1,7 +1,7 @@
 import {
-  ConflictException,
   Injectable,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common'
 
 import { PrismaService } from '../prisma/prisma.service'
@@ -13,7 +13,7 @@ import { AssignProductDto } from './dto/assign-product.dto'
 @Injectable()
 export class DiscountService {
   constructor(
-    private readonly prisma: PrismaService,
+    private prisma: PrismaService,
   ) {}
 
   async create(
@@ -31,15 +31,9 @@ export class DiscountService {
       where: {
         storeId,
       },
-
       include: {
-        products: {
-          include: {
-            product: true,
-          },
-        },
+        products: true,
       },
-
       orderBy: {
         createdAt: 'desc',
       },
@@ -51,14 +45,11 @@ export class DiscountService {
   ) {
     const discount =
       await this.prisma.discount.findUnique({
-        where: { id },
-
+        where: {
+          id,
+        },
         include: {
-          products: {
-            include: {
-              product: true,
-            },
-          },
+          products: true,
         },
       })
 
@@ -78,8 +69,9 @@ export class DiscountService {
     await this.findOne(id)
 
     return this.prisma.discount.update({
-      where: { id },
-
+      where: {
+        id,
+      },
       data: dto,
     })
   }
@@ -89,9 +81,19 @@ export class DiscountService {
   ) {
     await this.findOne(id)
 
-    await this.prisma.discount.delete({
-      where: { id },
-    })
+    await this.prisma.$transaction([
+      this.prisma.discountProduct.deleteMany({
+        where: {
+          discountId: id,
+        },
+      }),
+
+      this.prisma.discount.delete({
+        where: {
+          id,
+        },
+      }),
+    ])
 
     return {
       message:
@@ -104,25 +106,25 @@ export class DiscountService {
     dto: AssignProductDto,
   ) {
     const exist =
-      await this.prisma.discountProduct.findUnique({
+      await this.prisma.discountProduct.findFirst({
         where: {
-          discountId_productId: {
-            discountId,
-            productId: dto.productId,
-          },
+          discountId,
+          productId:
+            dto.productId,
         },
       })
 
     if (exist) {
       throw new ConflictException(
-        'Produk sudah masuk discount',
+        'Produk sudah ditambahkan',
       )
     }
 
     return this.prisma.discountProduct.create({
       data: {
         discountId,
-        productId: dto.productId,
+        productId:
+          dto.productId,
       },
     })
   }
@@ -131,18 +133,16 @@ export class DiscountService {
     discountId: string,
     productId: string,
   ) {
-    await this.prisma.discountProduct.delete({
+    await this.prisma.discountProduct.deleteMany({
       where: {
-        discountId_productId: {
-          discountId,
-          productId,
-        },
+        discountId,
+        productId,
       },
     })
 
     return {
       message:
-        'Produk berhasil dilepas dari discount',
+        'Produk dilepas dari discount',
     }
   }
 }

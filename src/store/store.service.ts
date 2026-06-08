@@ -16,7 +16,7 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 export class StoreService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async create(
     adminId: string,
@@ -158,12 +158,14 @@ export class StoreService {
   }
 
   async remove(
+    adminId: string,
     id: string,
   ) {
     const store =
-      await this.prisma.store.findUnique({
+      await this.prisma.store.findFirst({
         where: {
           id,
+          adminId,
         },
       })
 
@@ -175,7 +177,6 @@ export class StoreService {
 
     await this.prisma.$transaction(
       async (tx) => {
-
         await tx.auditLog.deleteMany({
           where: {
             user: {
@@ -183,13 +184,11 @@ export class StoreService {
             },
           },
         })
-
         await tx.shift.deleteMany({
           where: {
             storeId: id,
           },
         })
-
         await tx.transactionItem.deleteMany({
           where: {
             transaction: {
@@ -197,28 +196,40 @@ export class StoreService {
             },
           },
         })
-
         await tx.transaction.deleteMany({
           where: {
             storeId: id,
           },
         })
-
         await tx.stockMovement.deleteMany({
           where: {
             storeId: id,
           },
         })
-
         await tx.discountProduct.deleteMany({
           where: {
-            product: {
-              storeId: id,
-            },
+            OR: [
+              {
+                product: {
+                  storeId: id,
+                },
+              },
+              {
+                discount: {
+                  storeId: id,
+                },
+              },
+            ],
           },
         })
 
         await tx.product.deleteMany({
+          where: {
+            storeId: id,
+          },
+        })
+
+        await tx.discount.deleteMany({
           where: {
             storeId: id,
           },
@@ -242,12 +253,6 @@ export class StoreService {
           },
         })
 
-        await tx.discount.deleteMany({
-          where: {
-            storeId: id,
-          },
-        })
-
         await tx.user.deleteMany({
           where: {
             storeId: id,
@@ -264,7 +269,7 @@ export class StoreService {
 
     return {
       message:
-        'Store dan seluruh data berhasil dihapus',
+        'Store beserta seluruh data berhasil dihapus',
     }
   }
 }

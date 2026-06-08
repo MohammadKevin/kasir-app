@@ -23,7 +23,7 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 export class StoreController {
   constructor(
     private readonly storeService: StoreService,
-  ) {}
+  ) { }
 
   @Post()
   create(
@@ -83,12 +83,21 @@ export class StoreController {
   }
 
   @Delete(':id')
-remove(
-  @Param('id')
-  id: string,
-) {
-  return this.storeService.remove(
-    id,
-  )
-}
+
+  remove(
+    @Req()
+    req: Request & {
+      user: {
+        id: string
+      }
+    },
+
+    @Param('id')
+    id: string,
+  ) {
+    return this.storeService.remove(
+      req.user.id,
+      id,
+    )
+  }
 }
