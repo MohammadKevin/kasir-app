@@ -28,10 +28,10 @@ export class TransactionService {
   async create(dto: CreateTransactionDto) {
     return await this.prisma.$transaction(async (tx) => {
       const store = await tx.store.findUnique({ where: { id: dto.storeId } });
-      if (!store) throw new NotFoundException('Store yang anda pilih tidak ditemukan');
+      if (!store) throw new NotFoundException('Store  tidak ditemukan');
 
       const cashier = await tx.user.findUnique({ where: { id: dto.cashierId } });
-      if (!cashier) throw new NotFoundException('Cashier yang anda pilih tidak ditemukan');
+      if (!cashier) throw new NotFoundException('Cashier tidak ditemukan');
 
       let customerId = dto.customerId ?? null;
       if (!customerId && dto.phone) {
