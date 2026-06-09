@@ -44,7 +44,7 @@ export class TransactionService {
         customerId = customer?.id ?? null;
       }
 
-      const itemsData = [];
+      const itemsData: Prisma.TransactionItemCreateManyTransactionInput[] = [];
       let subtotal = 0;
       let totalDiscount = 0;
 
@@ -71,10 +71,18 @@ export class TransactionService {
         
         if (finalPrice < 0) throw new BadRequestException(`${product.name} harga tidak valid`);
 
-        subtotal += finalPrice * item.quantity;
+        subtotal += product.sellingPrice * item.quantity;
         totalDiscount += (masterDiscount + cashierDiscount) * item.quantity;
 
-        const itemsData: Prisma.TransactionItemCreateManyTransactionInput[] = [];
+        itemsData.push({
+          productId: product.id,
+          quantity: item.quantity,
+          originalPrice: product.sellingPrice,
+          masterDiscount,
+          cashierDiscount,
+          finalPrice,
+          subtotal: finalPrice * item.quantity,
+        });
 
         await tx.product.update({
           where: { id: product.id },
@@ -258,6 +266,13 @@ export class TransactionService {
 
             quantity:
               item.quantity,
+
+            originalPrice:
+              item.originalPrice,
+
+            discount:
+              item.masterDiscount +
+              item.cashierDiscount,
 
             price:
               item.finalPrice,
