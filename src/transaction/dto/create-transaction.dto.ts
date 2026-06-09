@@ -40,6 +40,18 @@ export class CreateTransactionDto {
   @IsInt()
   paidAmount!: number
 
+  @IsOptional()
+  @IsInt()
+  subtotal?: number
+
+  @IsOptional()
+  @IsInt()
+  totalDiscount?: number
+
+  @IsOptional()
+  @IsInt()
+  total?: number
+
   @IsArray()
   items!: TransactionItemDto[]
 }

@@ -100,43 +100,40 @@ export class ShiftService {
       )
     }
 
-    const sales =
-      await this.prisma.transaction.aggregate({
-        _sum: {
-          total: true,
+    const salesGroup = await this.prisma.transaction.groupBy({
+      by: ['paymentMethod'],
+      _sum: {
+        total: true,
+      },
+      where: {
+        storeId: shift.storeId,
+        status: TransactionStatus.PAID,
+        createdAt: {
+          gte: shift.createdAt,
         },
+      },
+    })
 
-        where: {
-          storeId:
-            shift.storeId,
+    let cashSales = 0
+    let qrisSales = 0
+    let debitSales = 0
+    let transferSales = 0
+    let creditSales = 0
 
-          status:
-            TransactionStatus.PAID,
-
-          createdAt: {
-            gte:
-              shift.createdAt,
-          },
-        },
-      })
-
-    const cashSales =
-      sales._sum.total ??
-      0
+    for (const group of salesGroup) {
+      const amount = group._sum.total ?? 0
+      if (group.paymentMethod === 'CASH') cashSales = amount
+      else if (group.paymentMethod === 'QRIS') qrisSales = amount
+      else if (group.paymentMethod === 'DEBIT') debitSales = amount
+      else if (group.paymentMethod === 'TRANSFER') transferSales = amount
+      else if (group.paymentMethod === 'CREDIT') creditSales = amount
+    }
 
     const expectedCash =
-      Number(
-        shift.openingCash,
-      ) +
-      Number(
-        cashSales,
-      )
+      Number(shift.openingCash) + cashSales
 
     const difference =
-      Number(
-        closingCash,
-      ) -
-      expectedCash
+      Number(closingCash) - expectedCash
 
     const updated =
       await this.prisma.shift.update({
@@ -171,6 +168,10 @@ export class ShiftService {
           shift.openingCash,
 
         cashSales,
+        qrisSales,
+        debitSales,
+        transferSales,
+        creditSales,
 
         expectedCash,
 

@@ -89,14 +89,19 @@ export class TransactionService {
           data: { stock: { decrement: item.quantity } }
         });
       }
+      const finalSubtotal = dto.subtotal !== undefined ? dto.subtotal : subtotal;
+      const finalTotalDiscount = dto.totalDiscount !== undefined ? dto.totalDiscount : totalDiscount;
+      const finalTotal = dto.total !== undefined ? dto.total : (finalSubtotal - finalTotalDiscount);
+      const changeAmount = dto.paymentMethod === 'CASH' ? Math.max(0, dto.paidAmount - finalTotal) : 0;
+
       return await tx.transaction.create({
         data: {
           invoiceNumber: this.generateInvoiceNumber(dto.storeId),
-          subtotal,
-          totalDiscount,
-          total: subtotal - totalDiscount,
+          subtotal: finalSubtotal,
+          totalDiscount: finalTotalDiscount,
+          total: finalTotal,
           paidAmount: dto.paidAmount,
-          changeAmount: dto.paidAmount - (subtotal - totalDiscount),
+          changeAmount,
           paymentMethod: dto.paymentMethod,
           storeId: dto.storeId,
           cashierId: dto.cashierId,
