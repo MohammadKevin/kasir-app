@@ -18,6 +18,19 @@ export class SupplierService {
   async create(
     dto: CreateSupplierDto,
   ) {
+    const store =
+      await this.prisma.store.findUnique({
+        where: {
+          id: dto.storeId,
+        },
+      })
+
+    if (!store) {
+      throw new NotFoundException(
+        'Store tidak ditemukan',
+      )
+    }
+
     const exist =
       await this.prisma.supplier.findFirst({
         where: {
