@@ -58,6 +58,10 @@ export class SupplierService {
         storeId,
       },
 
+      include: {
+        purchases: true,
+      },
+
       orderBy: {
         createdAt: 'desc',
       },
@@ -71,6 +75,10 @@ export class SupplierService {
       await this.prisma.supplier.findUnique({
         where: {
           id,
+        },
+
+        include: {
+          purchases: true,
         },
       })
 

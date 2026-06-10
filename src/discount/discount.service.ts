@@ -32,7 +32,11 @@ export class DiscountService {
         storeId,
       },
       include: {
-        products: true,
+        products: {
+          include: {
+            product: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -49,7 +53,11 @@ export class DiscountService {
           id,
         },
         include: {
-          products: true,
+          products: {
+            include: {
+              product: true,
+            },
+          },
         },
       })
 

@@ -181,6 +181,7 @@ export class StockMovementService {
             id: true,
             name: true,
             barcode: true,
+            sku: true,
           },
         },
       },
