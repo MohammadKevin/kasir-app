@@ -20,59 +20,59 @@ export class ShiftService {
   ) {}
 
   async open(
-  userId: string,
-  dto: OpenShiftDto,
-) {
-  console.log({
-    userId,
-    dto,
-  })
-
-  const store =
-    await this.prisma.store.findUnique({
-      where: {
-        id: dto.storeId,
-      },
-    })
-
-  console.log('STORE', store)
-
-  const user =
-    await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    })
-
-  console.log('USER', user)
-
-  if (!store) {
-    throw new NotFoundException(
-      'Store tidak ditemukan',
-    )
-  }
-
-  if (!user) {
-    throw new NotFoundException(
-      `Kasir tidak ditemukan: ${userId}`,
-    )
-  }
-
-  return this.prisma.shift.create({
-    data: {
-      storeId: dto.storeId,
+    userId: string,
+    dto: OpenShiftDto,
+  ) {
+    console.log({
       userId,
-      openingCash:
-        Number(dto.openingCash),
-      status:
-        ShiftStatus.OPEN,
-    },
+      dto,
+    })
 
-    include: {
-      user: true,
-    },
-  })
-}
+    const store =
+      await this.prisma.store.findUnique({
+        where: {
+          id: dto.storeId,
+        },
+      })
+
+    console.log('STORE', store)
+
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      })
+
+    console.log('USER', user)
+
+    if (!store) {
+      throw new NotFoundException(
+        'Store tidak ditemukan',
+      )
+    }
+
+    if (!user) {
+      throw new NotFoundException(
+        `Kasir tidak ditemukan: ${userId}`,
+      )
+    }
+
+    return this.prisma.shift.create({
+      data: {
+        storeId: dto.storeId,
+        userId,
+        openingCash:
+          Number(dto.openingCash),
+        status:
+          ShiftStatus.OPEN,
+      },
+
+      include: {
+        user: true,
+      },
+    })
+  }
 
   async close(
     id: string,
@@ -107,6 +107,7 @@ export class ShiftService {
       },
       where: {
         storeId: shift.storeId,
+        cashierId: shift.userId,
         status: TransactionStatus.PAID,
         createdAt: {
           gte: shift.createdAt,
@@ -145,6 +146,16 @@ export class ShiftService {
           closingCash:
             Number(
               closingCash,
+            ),
+          
+          expectedCash:
+            Number(
+              expectedCash,
+            ),
+          
+          difference:
+            Number(
+              difference,
             ),
 
           closedAt:
