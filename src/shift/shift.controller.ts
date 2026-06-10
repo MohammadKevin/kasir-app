@@ -33,7 +33,7 @@ export class ShiftController {
     )
   }
 
-  @Post('close/:id')
+  @Post(':id/close')
   close(
     @Param('id')
     id: string,
