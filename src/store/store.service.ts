@@ -177,14 +177,12 @@ export class StoreService {
 
   await this.prisma.$transaction(
     async (tx) => {
-      // 1. Delete cart holds
       await tx.cartHold.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 2. Delete audit logs
       await tx.auditLog.deleteMany({
         where: {
           user: {
@@ -193,14 +191,12 @@ export class StoreService {
         },
       })
 
-      // 3. Delete shifts
       await tx.shift.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 4. Delete transaction items
       await tx.transactionItem.deleteMany({
         where: {
           transaction: {
@@ -209,14 +205,12 @@ export class StoreService {
         },
       })
 
-      // 5. Delete transactions
       await tx.transaction.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 6. Delete purchase items (if exists in model)
       await tx.purchaseItem.deleteMany({
         where: {
           purchase: {
@@ -225,14 +219,12 @@ export class StoreService {
         },
       })
 
-      // 7. Delete purchases (must be deleted before supplier!)
       await tx.purchase.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 8. Delete discount product mappings
       await tx.discountProduct.deleteMany({
         where: {
           OR: [
@@ -250,63 +242,54 @@ export class StoreService {
         },
       })
 
-      // 9. Delete stock movements
       await tx.stockMovement.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 10. Delete discounts
       await tx.discount.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 11. Delete products
       await tx.product.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 12. Delete categories
       await tx.category.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 13. Delete suppliers (purchases are deleted, so this is safe!)
       await tx.supplier.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 14. Delete customers
       await tx.customer.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 15. Delete expenses
       await tx.expense.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 16. Delete users/cashiers
       await tx.user.deleteMany({
         where: {
           storeId: id,
         },
       })
 
-      // 17. Delete the store itself
       await tx.store.delete({
         where: {
           id,
