@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Res,
 } from '@nestjs/common'
 
@@ -19,9 +20,17 @@ export class ReportController {
   sales(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.sales(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
@@ -29,9 +38,17 @@ export class ReportController {
   expenses(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.expenses(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
@@ -49,9 +66,17 @@ export class ReportController {
   shifts(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.shifts(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
@@ -59,9 +84,17 @@ export class ReportController {
   purchases(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.purchases(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
@@ -69,9 +102,17 @@ export class ReportController {
   stockMovements(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.stockMovements(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
@@ -79,23 +120,39 @@ export class ReportController {
   profit(
     @Param('storeId')
     storeId: string,
+
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     return this.reportService.profit(
       storeId,
+      startDate,
+      endDate,
     )
   }
 
   @Get('sales/:storeId/excel')
   async salesExcel(
+    @Res()
+    res: express.Response,
+
     @Param('storeId')
     storeId: string,
 
-    @Res()
-    res: express.Response,
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     const buffer =
       await this.reportService.salesExcel(
         storeId,
+        startDate,
+        endDate,
       )
 
     res.setHeader(
@@ -113,15 +170,23 @@ export class ReportController {
 
   @Get('sales/:storeId/pdf')
   async salesPdf(
+    @Res()
+    res: express.Response,
+
     @Param('storeId')
     storeId: string,
 
-    @Res()
-    res: express.Response,
+    @Query('startDate')
+    startDate?: string,
+
+    @Query('endDate')
+    endDate?: string,
   ) {
     const buffer =
       await this.reportService.salesPdf(
         storeId,
+        startDate,
+        endDate,
       )
 
     res.setHeader(
