@@ -23,5 +23,6 @@ jobs:
             cd /var/www/kasir-app
             git pull origin main
             npm install
+            npx prisma migrate deploy
             npm run build
             pm2 restart all --update-env || pm2 start dist/src/main.js --name "kasir-app"
