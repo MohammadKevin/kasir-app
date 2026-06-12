@@ -515,3 +515,16 @@ model StockMovement {
   @@index([storeId])
   @@map("stock_movements")
 }
+
+model Session {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @db.Char(36)
+  userType   String   // 'ADMIN' atau 'STORE'
+  token      String   @db.Text
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, userType])
+  @@map("sessions")
+}
+

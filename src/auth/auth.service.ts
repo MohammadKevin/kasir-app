@@ -57,15 +57,34 @@ export class AuthService {
         )
       }
 
-      return {
-        accessToken:
-          await this.jwt.signAsync({
-            sub:
-              admin.id,
+      // Check existing session
+      const existingSession = await this.prisma.session.findUnique({
+        where: { userId_userType: { userId: admin.id, userType: 'ADMIN' } }
+      })
 
-            type:
-              'ADMIN',
-          }),
+      if (existingSession) {
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000)
+        if (existingSession.lastActive > tenMinutesAgo) {
+          throw new UnauthorizedException(
+            'Akun ini sedang aktif di perangkat lain. Silakan log out terlebih dahulu atau tunggu sesi sebelumnya berakhir.'
+          )
+        }
+      }
+
+      const accessToken = await this.jwt.signAsync({
+        sub: admin.id,
+        type: 'ADMIN',
+      })
+
+      // Upsert current session
+      await this.prisma.session.upsert({
+        where: { userId_userType: { userId: admin.id, userType: 'ADMIN' } },
+        update: { token: accessToken, lastActive: new Date() },
+        create: { userId: admin.id, userType: 'ADMIN', token: accessToken, lastActive: new Date() }
+      })
+
+      return {
+        accessToken,
 
         user: {
           id:
@@ -112,15 +131,34 @@ export class AuthService {
       )
     }
 
-    return {
-      accessToken:
-        await this.jwt.signAsync({
-          sub:
-            store.id,
+    // Check existing session
+    const existingSession = await this.prisma.session.findUnique({
+      where: { userId_userType: { userId: store.id, userType: 'STORE' } }
+    })
 
-          type:
-            'STORE',
-        }),
+    if (existingSession) {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000)
+      if (existingSession.lastActive > tenMinutesAgo) {
+        throw new UnauthorizedException(
+          'Akun ini sedang aktif di perangkat lain. Silakan log out terlebih dahulu atau tunggu sesi sebelumnya berakhir.'
+        )
+      }
+    }
+
+    const accessToken = await this.jwt.signAsync({
+      sub: store.id,
+      type: 'STORE',
+    })
+
+    // Upsert current session
+    await this.prisma.session.upsert({
+      where: { userId_userType: { userId: store.id, userType: 'STORE' } },
+      update: { token: accessToken, lastActive: new Date() },
+      create: { userId: store.id, userType: 'STORE', token: accessToken, lastActive: new Date() }
+    })
+
+    return {
+      accessToken,
 
       user: {
         id:
@@ -137,6 +175,17 @@ export class AuthService {
       },
     }
   }
+
+  async logout(userId: string, userType: string) {
+    await this.prisma.session.deleteMany({
+      where: {
+        userId,
+        userType,
+      },
+    })
+    return { success: true }
+  }
+
 
   async forgotPassword(dto: ForgotPasswordDto) {
     let userType: 'ADMIN' | 'STORE' | null = null;

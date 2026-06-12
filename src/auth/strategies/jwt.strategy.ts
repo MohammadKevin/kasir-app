@@ -34,15 +34,55 @@ export class JwtStrategy extends PassportStrategy(
         config.getOrThrow(
           'JWT_SECRET',
         ),
+
+      passReqToCallback: true,
     })
   }
 
   async validate(
+    req: any,
     payload: {
       sub: string
       type: string
     },
   ) {
+    const session = await this.prisma.session.findUnique({
+      where: {
+        userId_userType: {
+          userId: payload.sub,
+          userType: payload.type,
+        },
+      },
+    })
+
+    if (!session) {
+      throw new UnauthorizedException(
+        'Sesi Anda tidak valid atau telah berakhir.',
+      )
+    }
+
+    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req)
+    if (session.token !== token) {
+      throw new UnauthorizedException(
+        'Sesi Anda telah aktif di perangkat lain.',
+      )
+    }
+
+    const oneMinuteAgo = new Date(Date.now() - 60000)
+    if (session.lastActive < oneMinuteAgo) {
+      await this.prisma.session.update({
+        where: {
+          userId_userType: {
+            userId: payload.sub,
+            userType: payload.type,
+          },
+        },
+        data: {
+          lastActive: new Date(),
+        },
+      }).catch(() => {})
+    }
+
     if (
       payload.type ===
       'ADMIN'
@@ -92,4 +132,5 @@ export class JwtStrategy extends PassportStrategy(
         'STORE',
     }
   }
+
 }
