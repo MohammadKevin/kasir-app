@@ -3,17 +3,17 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const trx = await prisma.transaction.findFirst({
+  const transactions = await prisma.transaction.findMany({
     orderBy: { createdAt: 'desc' },
-    include: {
-      items: {
-        include: {
-          product: true,
-        }
-      }
+    select: {
+      id: true,
+      invoiceNumber: true,
+      total: true,
+      createdAt: true,
+      status: true,
     }
   });
-  console.log('LATEST TRANSACTION:', JSON.stringify(trx, null, 2));
+  console.log('ALL TRANSACTIONS:', JSON.stringify(transactions, null, 2));
 }
 
 main()
