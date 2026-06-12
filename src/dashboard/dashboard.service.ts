@@ -107,15 +107,10 @@ export class DashboardService {
   async overview(
     storeId: string,
   ) {
-    const startToday =
-      new Date()
-
-    startToday.setHours(
-      0,
-      0,
-      0,
-      0,
-    )
+    const now = new Date()
+    const jakartaTime = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+    jakartaTime.setUTCHours(0, 0, 0, 0)
+    const startToday = new Date(jakartaTime.getTime() - 7 * 60 * 60 * 1000)
 
     const [
       sales,
@@ -168,6 +163,9 @@ export class DashboardService {
 
           where: {
             storeId,
+            createdAt: {
+              gte: startToday,
+            },
           },
         }),
 
@@ -180,6 +178,10 @@ export class DashboardService {
           where: {
             transaction: {
               storeId,
+              status: TransactionStatus.PAID,
+              createdAt: {
+                gte: startToday,
+              },
             },
           },
         }),
