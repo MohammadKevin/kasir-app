@@ -54,6 +54,25 @@ export class TransactionService {
           throw new BadRequestException(`Produk ${product?.name || item.productId} tidak tersedia`);
         }
 
+        // Deduct ingredient stock based on product recipe (BOM)
+        const recipe = await tx.productIngredient.findMany({
+          where: { productId: product.id },
+          include: { ingredient: true }
+        });
+
+        for (const recipeItem of recipe) {
+          const requiredQty = recipeItem.quantity * item.quantity;
+          if (recipeItem.ingredient.stock < requiredQty) {
+            throw new BadRequestException(
+              `Bahan baku ${recipeItem.ingredient.name} tidak cukup untuk membuat ${product.name}`
+            );
+          }
+          await tx.ingredient.update({
+            where: { id: recipeItem.ingredientId },
+            data: { stock: { decrement: requiredQty } }
+          });
+        }
+
         const activeDiscount = await tx.discountProduct.findFirst({
             where: { productId: product.id, discount: { is: { isActive: true } } },
             include: { discount: true }
@@ -94,6 +113,47 @@ export class TransactionService {
       const finalTotal = dto.total !== undefined ? dto.total : (finalSubtotal - finalTotalDiscount);
       const changeAmount = dto.paymentMethod === 'CASH' ? Math.max(0, dto.paidAmount - finalTotal) : 0;
 
+      // Process Customer Loyalty Points
+      let pointsEarned = 0;
+      let pointsRedeemed = dto.pointsRedeemed ?? 0;
+      if (customerId) {
+        if (pointsRedeemed > 0) {
+          const customer = await tx.customer.findUnique({ where: { id: customerId } });
+          if (!customer || customer.points < pointsRedeemed) {
+            throw new BadRequestException('Poin member tidak mencukupi untuk redeem');
+          }
+          await tx.customer.update({
+            where: { id: customerId },
+            data: { points: { decrement: pointsRedeemed } }
+          });
+        }
+        
+        // Earn 1 point per 10,000 IDR total spent
+        pointsEarned = dto.pointsEarned ?? Math.floor(finalTotal / 10000);
+        const updatedCust = await tx.customer.update({
+          where: { id: customerId },
+          data: { points: { increment: pointsEarned } }
+        });
+
+        // Update member tier based on points
+        let newTier = 'BRONZE';
+        if (updatedCust.points >= 500) newTier = 'GOLD';
+        else if (updatedCust.points >= 100) newTier = 'SILVER';
+
+        await tx.customer.update({
+          where: { id: customerId },
+          data: { memberTier: newTier }
+        });
+      }
+
+      // Update table status to AVAILABLE (billing/checkout finished)
+      if (dto.orderType === 'DINEIN' && dto.tableId) {
+        await tx.table.update({
+          where: { id: dto.tableId },
+          data: { status: 'AVAILABLE' }
+        });
+      }
+
       return await tx.transaction.create({
         data: {
           invoiceNumber: this.generateInvoiceNumber(dto.storeId),
@@ -106,6 +166,13 @@ export class TransactionService {
           storeId: dto.storeId,
           cashierId: dto.cashierId,
           customerId,
+          orderType: dto.orderType ?? 'TAKEAWAY',
+          tableId: dto.tableId ?? null,
+          taxAmount: dto.taxAmount ?? 0,
+          serviceAmount: dto.serviceAmount ?? 0,
+          splitPayments: dto.splitPayments ?? null,
+          pointsEarned,
+          pointsRedeemed,
           items: { createMany: { data: itemsData } }
         }
       });
@@ -231,6 +298,8 @@ export class TransactionService {
           customer: true,
 
           store: true,
+          
+          table: true,
 
           items: {
             include: {
@@ -301,6 +370,27 @@ export class TransactionService {
 
       changeAmount:
         trx.changeAmount,
+      
+      orderType:
+        trx.orderType,
+        
+      tableNumber:
+        trx.table?.number ?? null,
+        
+      taxAmount:
+        trx.taxAmount,
+        
+      serviceAmount:
+        trx.serviceAmount,
+        
+      splitPayments:
+        trx.splitPayments,
+        
+      pointsEarned:
+        trx.pointsEarned,
+        
+      pointsRedeemed:
+        trx.pointsRedeemed,
 
       createdAt:
         trx.createdAt,

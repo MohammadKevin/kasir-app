@@ -1,0 +1,103 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { ClockDto } from './dto/clock.dto'
+
+@Injectable()
+export class AttendanceService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async clockIn(dto: ClockDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    })
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan')
+    }
+
+    const active = await this.prisma.attendance.findFirst({
+      where: {
+        userId: dto.userId,
+        clockOut: null,
+      },
+    })
+
+    if (active) {
+      throw new BadRequestException('Karyawan sudah melakukan clock-in')
+    }
+
+    return this.prisma.attendance.create({
+      data: {
+        userId: dto.userId,
+        clockIn: new Date(),
+      },
+      include: {
+        user: true,
+      },
+    })
+  }
+
+  async clockOut(dto: ClockDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    })
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan')
+    }
+
+    const active = await this.prisma.attendance.findFirst({
+      where: {
+        userId: dto.userId,
+        clockOut: null,
+      },
+      orderBy: {
+        clockIn: 'desc',
+      },
+    })
+
+    if (!active) {
+      throw new BadRequestException('Karyawan belum melakukan clock-in atau shift sudah ditutup')
+    }
+
+    return this.prisma.attendance.update({
+      where: { id: active.id },
+      data: {
+        clockOut: new Date(),
+      },
+      include: {
+        user: true,
+      },
+    })
+  }
+
+  async getStatus(userId: string) {
+    const active = await this.prisma.attendance.findFirst({
+      where: {
+        userId,
+        clockOut: null,
+      },
+    })
+
+    return {
+      isClockedIn: !!active,
+      attendance: active || null,
+    }
+  }
+
+  async findAllByStore(storeId: string) {
+    return this.prisma.attendance.findMany({
+      where: {
+        user: {
+          storeId,
+        },
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        clockIn: 'desc',
+      },
+    })
+  }
+}

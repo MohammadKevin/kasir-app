@@ -52,6 +52,33 @@ export class CreateTransactionDto {
   @IsInt()
   total?: number
 
+  @IsOptional()
+  @IsString()
+  orderType?: string
+
+  @IsOptional()
+  @IsString()
+  tableId?: string
+
+  @IsOptional()
+  @IsInt()
+  taxAmount?: number
+
+  @IsOptional()
+  @IsInt()
+  serviceAmount?: number
+
+  @IsOptional()
+  splitPayments?: any
+
+  @IsOptional()
+  @IsInt()
+  pointsEarned?: number
+
+  @IsOptional()
+  @IsInt()
+  pointsRedeemed?: number
+
   @IsArray()
   items!: TransactionItemDto[]
 }

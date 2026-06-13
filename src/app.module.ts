@@ -21,6 +21,9 @@ import { CashierModule } from './cashier/cashier.module';
 import { StockMovementModule } from './stock-movement/stock-movement.module';
 import { PurchaseModule } from './purchase/purchase.module';
 import { ReportModule } from './report/report.module';
+import { TableModule } from './table/table.module';
+import { IngredientModule } from './ingredient/ingredient.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -47,6 +50,9 @@ import { ReportModule } from './report/report.module';
     StockMovementModule,
     PurchaseModule,
     ReportModule,
+    TableModule,
+    IngredientModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
