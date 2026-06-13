@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  IsBoolean,
 } from 'class-validator'
 
 export class UpdateStoreDto {
@@ -32,4 +33,24 @@ export class UpdateStoreDto {
 
   @IsOptional()
   isActive?: boolean
+
+  @IsOptional()
+  @IsString()
+  receiptHeader?: string
+
+  @IsOptional()
+  @IsString()
+  receiptFooter?: string
+
+  @IsOptional()
+  @IsBoolean()
+  receiptShowBarcode?: boolean
+
+  @IsOptional()
+  @IsBoolean()
+  receiptShowCustomer?: boolean
+
+  @IsOptional()
+  @IsString()
+  receiptSize?: string
 }

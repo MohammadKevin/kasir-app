@@ -89,6 +89,12 @@ model Store {
   taxRate     Float @default(0)
   serviceRate Float @default(0)
 
+  receiptHeader       String? @db.Text
+  receiptFooter       String? @db.Text
+  receiptShowBarcode  Boolean @default(true)
+  receiptShowCustomer Boolean @default(true)
+  receiptSize         String  @default("58mm")
+
   admin Admin @relation("AdminStores", fields: [adminId], references: [id], onDelete: Cascade)
 
   cashiers       User[]

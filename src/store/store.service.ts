@@ -152,6 +152,11 @@ export class StoreService {
         phone: true,
         address: true,
         isActive: true,
+        receiptHeader: true,
+        receiptFooter: true,
+        receiptShowBarcode: true,
+        receiptShowCustomer: true,
+        receiptSize: true,
         updatedAt: true,
       },
     });
