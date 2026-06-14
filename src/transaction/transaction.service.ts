@@ -116,7 +116,7 @@ export class TransactionService {
       // Process Customer Loyalty Points
       let pointsEarned = 0;
       let pointsRedeemed = dto.pointsRedeemed ?? 0;
-      if (customerId) {
+      if (customerId && store.pointsEnabled) {
         if (pointsRedeemed > 0) {
           const customer = await tx.customer.findUnique({ where: { id: customerId } });
           if (!customer || customer.points < pointsRedeemed) {
@@ -144,6 +144,9 @@ export class TransactionService {
           where: { id: customerId },
           data: { memberTier: newTier }
         });
+      } else {
+        pointsEarned = 0;
+        pointsRedeemed = 0;
       }
 
       // Update table status to AVAILABLE (billing/checkout finished)

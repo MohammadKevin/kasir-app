@@ -62,4 +62,12 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsNumber()
   serviceRate?: number
+
+  @IsOptional()
+  @IsBoolean()
+  pointsEnabled?: boolean
+
+  @IsOptional()
+  @IsNumber()
+  pointValue?: number
 }

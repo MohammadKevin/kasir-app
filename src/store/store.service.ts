@@ -177,6 +177,8 @@ export class StoreService {
         receiptShowBarcode: true,
         receiptShowCustomer: true,
         receiptSize: true,
+        pointsEnabled: true,
+        pointValue: true,
         updatedAt: true,
       },
     });

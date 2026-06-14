@@ -94,6 +94,8 @@ model Store {
   receiptShowBarcode  Boolean @default(true)
   receiptShowCustomer Boolean @default(true)
   receiptSize         String  @default("58mm")
+  pointsEnabled       Boolean @default(true)
+  pointValue          Int     @default(1000)
 
   admin Admin @relation("AdminStores", fields: [adminId], references: [id], onDelete: Cascade)
 
