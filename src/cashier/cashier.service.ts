@@ -241,6 +241,23 @@ export class CashierService {
       )
     }
 
+    // Auto Clock-In if not already clocked in
+    const activeAttendance = await this.prisma.attendance.findFirst({
+      where: {
+        userId: cashier.id,
+        clockOut: null,
+      },
+    })
+
+    if (!activeAttendance) {
+      await this.prisma.attendance.create({
+        data: {
+          userId: cashier.id,
+          clockIn: new Date(),
+        },
+      })
+    }
+
     return {
       success:
         true,

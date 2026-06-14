@@ -136,6 +136,26 @@ export class ShiftService {
     const difference =
       Number(closingCash) - expectedCash
 
+    // Auto Clock-Out if clocked in
+    const activeAttendance = await this.prisma.attendance.findFirst({
+      where: {
+        userId: shift.userId,
+        clockOut: null,
+      },
+      orderBy: {
+        clockIn: 'desc',
+      },
+    })
+
+    if (activeAttendance) {
+      await this.prisma.attendance.update({
+        where: { id: activeAttendance.id },
+        data: {
+          clockOut: new Date(),
+        },
+      })
+    }
+
     const updated =
       await this.prisma.shift.update({
         where: {
