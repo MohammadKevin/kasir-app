@@ -24,11 +24,6 @@ export class AttendanceController {
     return this.attendanceService.getStatus(userId)
   }
 
-  @Get('store/:storeId')
-  findAllByStore(@Param('storeId') storeId: string) {
-    return this.attendanceService.findAllByStore(storeId)
-  }
-
   @Post('store/open')
   openStore(
     @Req()
@@ -89,6 +84,11 @@ export class AttendanceController {
   @Get('store/history/:storeId')
   getStoreHistory(@Param('storeId') storeId: string) {
     return this.attendanceService.findStoreAttendanceHistory(storeId)
+  }
+
+  @Get('store/:storeId')
+  findAllByStore(@Param('storeId') storeId: string) {
+    return this.attendanceService.findAllByStore(storeId)
   }
 }
 
