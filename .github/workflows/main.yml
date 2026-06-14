@@ -19,10 +19,11 @@ jobs:
           host: lailacollections.my.id
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 20m
           script: |
             cd /var/www/kasir-app
             git pull origin main
             npm install
             npx prisma migrate deploy
-            npm run build
+            NODE_OPTIONS="--max-old-space-size=1024" npm run build
             pm2 restart all --update-env || pm2 start dist/src/main.js --name "kasir-app"
