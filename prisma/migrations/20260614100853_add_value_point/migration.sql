@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `stores` ADD COLUMN `pointValue` INTEGER NOT NULL DEFAULT 1000,
+    ADD COLUMN `pointsEnabled` BOOLEAN NOT NULL DEFAULT true;
