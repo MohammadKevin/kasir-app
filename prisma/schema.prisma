@@ -110,6 +110,7 @@ model Store {
   purchases Purchase[]
   tables      Table[]
   ingredients Ingredient[]
+  storeAttendances StoreAttendance[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -619,4 +620,20 @@ model Attendance {
   @@index([userId])
   @@map("attendances")
 }
+
+model StoreAttendance {
+  id        String    @id @default(uuid()) @db.Char(36)
+  storeId   String    @db.Char(36)
+  openTime  DateTime  @default(now())
+  closeTime DateTime?
+
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([storeId])
+  @@map("store_attendances")
+}
+
 

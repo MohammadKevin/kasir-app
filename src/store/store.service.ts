@@ -152,6 +152,8 @@ export class StoreService {
         phone: true,
         address: true,
         isActive: true,
+        taxRate: true,
+        serviceRate: true,
         receiptHeader: true,
         receiptFooter: true,
         receiptShowBarcode: true,

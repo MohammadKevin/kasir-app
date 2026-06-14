@@ -4,6 +4,7 @@ import {
   IsString,
   MinLength,
   IsBoolean,
+  IsNumber,
 } from 'class-validator'
 
 export class UpdateStoreDto {
@@ -53,4 +54,12 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsString()
   receiptSize?: string
+
+  @IsOptional()
+  @IsNumber()
+  taxRate?: number
+
+  @IsOptional()
+  @IsNumber()
+  serviceRate?: number
 }

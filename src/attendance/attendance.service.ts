@@ -100,4 +100,89 @@ export class AttendanceService {
       },
     })
   }
+
+  async openStore(storeId: string) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+    })
+
+    if (!store) {
+      throw new NotFoundException('Store tidak ditemukan')
+    }
+
+    const active = await this.prisma.storeAttendance.findFirst({
+      where: {
+        storeId,
+        closeTime: null,
+      },
+    })
+
+    if (active) {
+      throw new BadRequestException('Toko sudah dibuka')
+    }
+
+    return this.prisma.storeAttendance.create({
+      data: {
+        storeId,
+        openTime: new Date(),
+      },
+    })
+  }
+
+  async closeStore(storeId: string) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+    })
+
+    if (!store) {
+      throw new NotFoundException('Store tidak ditemukan')
+    }
+
+    const active = await this.prisma.storeAttendance.findFirst({
+      where: {
+        storeId,
+        closeTime: null,
+      },
+      orderBy: {
+        openTime: 'desc',
+      },
+    })
+
+    if (!active) {
+      throw new BadRequestException('Toko belum dibuka')
+    }
+
+    return this.prisma.storeAttendance.update({
+      where: { id: active.id },
+      data: {
+        closeTime: new Date(),
+      },
+    })
+  }
+
+  async getStoreStatus(storeId: string) {
+    const active = await this.prisma.storeAttendance.findFirst({
+      where: {
+        storeId,
+        closeTime: null,
+      },
+    })
+
+    return {
+      isOpen: !!active,
+      attendance: active || null,
+    }
+  }
+
+  async findStoreAttendanceHistory(storeId: string) {
+    return this.prisma.storeAttendance.findMany({
+      where: {
+        storeId,
+      },
+      orderBy: {
+        openTime: 'desc',
+      },
+    })
+  }
 }
+
