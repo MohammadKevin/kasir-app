@@ -15,6 +15,10 @@ export class UserService {
 
   async findAll() {
     return this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
+
       include: {
         store: {
           select: {
@@ -32,9 +36,10 @@ export class UserService {
 
   async findOne(id: string) {
     const cashier =
-      await this.prisma.user.findUnique({
+      await this.prisma.user.findFirst({
         where: {
           id,
+          deletedAt: null,
         },
 
         include: {
@@ -85,9 +90,14 @@ export class UserService {
   async remove(id: string) {
     await this.findOne(id)
 
-    await this.prisma.user.delete({
+    await this.prisma.user.update({
       where: {
         id,
+      },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+        pin: `deleted-${id}-${Date.now()}`,
       },
     })
 

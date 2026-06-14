@@ -84,14 +84,32 @@ export class StoreService {
   async findAll(
     adminId: string,
   ) {
-    return this.prisma.store.findMany({
+    const stores = await this.prisma.store.findMany({
       where: {
         adminId,
+      },
+
+      include: {
+        storeAttendances: {
+          where: {
+            closeTime: null,
+          },
+          take: 1,
+        },
       },
 
       orderBy: {
         createdAt: 'desc',
       },
+    });
+
+    return stores.map((store) => {
+      const activeAttendance = store.storeAttendances?.[0] || null;
+      const { storeAttendances, ...rest } = store as any;
+      return {
+        ...rest,
+        isOpen: !!activeAttendance,
+      };
     });
   }
 
