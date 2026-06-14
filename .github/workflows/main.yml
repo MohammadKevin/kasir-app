@@ -22,8 +22,11 @@ jobs:
           command_timeout: 20m
           script: |
             cd /var/www/kasir-app
+            git reset --hard
             git pull origin main
             npm install
             npx prisma migrate deploy
-            NODE_OPTIONS="--max-old-space-size=1024" npm run build
-            pm2 restart all --update-env || pm2 start dist/src/main.js --name "kasir-app"
+            export NODE_OPTIONS="--max-old-space-size=512"
+            npm run build
+            pm2 reload kasir-backend || pm2 start dist/src/main.js --name "kasir-backend"
+            pm2 save
