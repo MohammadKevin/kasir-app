@@ -98,7 +98,7 @@ export class ExpenseService {
           },
         })
       } else {
-        let createdRecord = null
+        let createdRecord: any = null
         if (availableRevenue > 0) {
           createdRecord = await this.prisma.expense.create({
             data: {
