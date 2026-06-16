@@ -25,4 +25,8 @@ export class UpdateExpenseDto {
     ExpenseCategory,
   )
   category?: ExpenseCategory
+
+  @IsOptional()
+  @IsString()
+  createdAt?: string
 }

@@ -1,6 +1,7 @@
 import {
   IsEnum,
   IsInt,
+  IsOptional,
   IsString,
   Min,
 } from 'class-validator'
@@ -24,4 +25,8 @@ export class CreateExpenseDto {
     ExpenseCategory,
   )
   category!: ExpenseCategory
+
+  @IsOptional()
+  @IsString()
+  createdAt?: string
 }
