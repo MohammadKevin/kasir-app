@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { CreateCashierDto } from './dto/create-cashier.dto'
 import { UpdateCashierDto } from './dto/update-cashier.dto'
 import { LoginPinDto } from './dto/login-pin.dto'
+import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto'
 
 @Injectable()
 export class CashierService {
@@ -313,5 +314,62 @@ export class CashierService {
           cashier.isStoreAdmin,
       },
     }
+  }
+
+  async verifyAdminPin(
+    dto: VerifyAdminPinDto,
+  ) {
+    const cashiers =
+      await this.prisma.user.findMany({
+        where: {
+          storeId:
+            dto.storeId,
+
+          isStoreAdmin:
+            true,
+
+          deletedAt:
+            null,
+
+          isActive:
+            true,
+        },
+      })
+
+    for (const cashier of cashiers) {
+      const valid =
+        await bcrypt.compare(
+          dto.pin,
+          cashier.pin,
+        )
+
+      if (valid) {
+        return {
+          success:
+            true,
+
+          cashier: {
+            id:
+              cashier.id,
+
+            name:
+              cashier.name,
+
+            phone:
+              cashier.phone,
+
+            storeId:
+              cashier.storeId,
+
+            isStoreAdmin:
+              cashier.isStoreAdmin,
+          },
+        }
+      }
+    }
+
+    throw new UnauthorizedException(
+      'PIN Admin Store tidak valid atau tidak memiliki hak akses!',
+    )
   }
 }

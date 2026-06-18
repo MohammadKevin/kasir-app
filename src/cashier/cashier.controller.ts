@@ -17,6 +17,7 @@ import { CashierService } from './cashier.service'
 import { CreateCashierDto } from './dto/create-cashier.dto'
 import { UpdateCashierDto } from './dto/update-cashier.dto'
 import { LoginPinDto } from './dto/login-pin.dto'
+import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto'
 
 @Controller('cashier')
 export class CashierController {
@@ -93,6 +94,16 @@ export class CashierController {
     dto: LoginPinDto,
   ) {
     return this.cashierService.loginPin(
+      dto,
+    )
+  }
+
+  @Post('verify-admin-pin')
+  verifyAdminPin(
+    @Body()
+    dto: VerifyAdminPinDto,
+  ) {
+    return this.cashierService.verifyAdminPin(
       dto,
     )
   }
