@@ -111,7 +111,7 @@ export class TransactionService {
       const finalSubtotal = dto.subtotal !== undefined ? dto.subtotal : subtotal;
       const finalTotalDiscount = dto.totalDiscount !== undefined ? dto.totalDiscount : totalDiscount;
       const finalTotal = dto.total !== undefined ? dto.total : (finalSubtotal - finalTotalDiscount);
-      const changeAmount = dto.paymentMethod === 'CASH' ? Math.max(0, dto.paidAmount - finalTotal) : 0;
+      const changeAmount = (dto.paymentMethod === 'CASH' || dto.paymentMethod === 'SPLIT') ? Math.max(0, dto.paidAmount - finalTotal) : 0;
 
       // Process Customer Loyalty Points
       let pointsEarned = 0;
