@@ -349,4 +349,459 @@ export class ReportService {
             estimatedProfit: totalSales - totalExpense,
         };
     }
+
+    async salesByOutlet(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const store = await this.prisma.store.findUnique({
+            where: { id: storeId },
+            select: { adminId: true }
+        });
+        if (!store) return [];
+
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            store: { adminId: store.adminId },
+            status: TransactionStatus.PAID,
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            include: {
+                store: { select: { name: true } }
+            }
+        });
+
+        const storeSalesMap = new Map<string, { storeName: string, totalSales: number, count: number }>();
+        for (const trx of transactions) {
+            const storeName = trx.store.name;
+            const current = storeSalesMap.get(storeName) || { storeName, totalSales: 0, count: 0 };
+            current.totalSales += trx.total;
+            current.count += 1;
+            storeSalesMap.set(storeName, current);
+        }
+
+        return Array.from(storeSalesMap.values());
+    }
+
+    async salesByDate(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID,
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            select: {
+                createdAt: true,
+                total: true
+            }
+        });
+
+        const dateSalesMap = new Map<string, { date: string, totalSales: number, count: number }>();
+        for (const trx of transactions) {
+            const dateStr = trx.createdAt.toISOString().split('T')[0];
+            const current = dateSalesMap.get(dateStr) || { date: dateStr, totalSales: 0, count: 0 };
+            current.totalSales += trx.total;
+            current.count += 1;
+            dateSalesMap.set(dateStr, current);
+        }
+
+        return Array.from(dateSalesMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    async salesByHour(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID,
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            select: {
+                createdAt: true,
+                total: true
+            }
+        });
+
+        const hourlySalesMap = new Map<number, { hour: string, totalSales: number, count: number }>();
+        for (let i = 0; i < 24; i++) {
+            hourlySalesMap.set(i, { hour: `${String(i).padStart(2, '0')}:00`, totalSales: 0, count: 0 });
+        }
+
+        for (const trx of transactions) {
+            const hour = trx.createdAt.getHours();
+            const current = hourlySalesMap.get(hour);
+            if (current) {
+                current.totalSales += trx.total;
+                current.count += 1;
+            }
+        }
+
+        return Array.from(hourlySalesMap.values());
+    }
+
+    async salesByCategory(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            transaction: {
+                storeId,
+                status: TransactionStatus.PAID
+            }
+        };
+        if (dateFilter) {
+            where.transaction.createdAt = dateFilter;
+        }
+
+        const items = await this.prisma.transactionItem.findMany({
+            where,
+            include: {
+                product: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
+        });
+
+        const categorySalesMap = new Map<string, { categoryName: string, totalSales: number, quantity: number }>();
+        for (const item of items) {
+            const categoryName = item.product?.category?.name ?? 'Uncategorized';
+            const current = categorySalesMap.get(categoryName) || { categoryName, totalSales: 0, quantity: 0 };
+            current.totalSales += item.subtotal;
+            current.quantity += item.quantity;
+            categorySalesMap.set(categoryName, current);
+        }
+
+        return Array.from(categorySalesMap.values()).sort((a, b) => b.totalSales - a.totalSales);
+    }
+
+    async salesByCustomer(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID,
+            customerId: { not: null }
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            include: {
+                customer: true
+            }
+        });
+
+        const customerSalesMap = new Map<string, { customerName: string, phone: string, totalSpent: number, count: number }>();
+        for (const trx of transactions) {
+            if (!trx.customer) continue;
+            const customerId = trx.customer.id;
+            const current = customerSalesMap.get(customerId) || {
+                customerName: trx.customer.name,
+                phone: trx.customer.phone ?? '-',
+                totalSpent: 0,
+                count: 0
+            };
+            current.totalSpent += trx.total;
+            current.count += 1;
+            customerSalesMap.set(customerId, current);
+        }
+
+        return Array.from(customerSalesMap.values()).sort((a, b) => b.totalSpent - a.totalSpent);
+    }
+
+    async salesByPaymentMethod(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            select: {
+                paymentMethod: true,
+                total: true
+            }
+        });
+
+        const paymentMap = new Map<string, { method: string, totalSales: number, count: number }>();
+        for (const trx of transactions) {
+            const method = trx.paymentMethod;
+            const current = paymentMap.get(method) || { method, totalSales: 0, count: 0 };
+            current.totalSales += trx.total;
+            current.count += 1;
+            paymentMap.set(method, current);
+        }
+
+        return Array.from(paymentMap.values()).sort((a, b) => b.totalSales - a.totalSales);
+    }
+
+    async taxes(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID,
+            taxAmount: { gt: 0 }
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        return this.prisma.transaction.findMany({
+            where,
+            select: {
+                createdAt: true,
+                invoiceNumber: true,
+                total: true,
+                taxAmount: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
+    async promos(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID,
+            totalDiscount: { gt: 0 }
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        return this.prisma.transaction.findMany({
+            where,
+            select: {
+                createdAt: true,
+                invoiceNumber: true,
+                total: true,
+                totalDiscount: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
+
+    async dailyProfit(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const salesWhere: any = {
+            storeId,
+            status: TransactionStatus.PAID
+        };
+        const expensesWhere: any = { storeId };
+        if (dateFilter) {
+            salesWhere.createdAt = dateFilter;
+            expensesWhere.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where: salesWhere,
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        });
+
+        const expenses = await this.prisma.expense.findMany({
+            where: expensesWhere
+        });
+
+        const dailyMap = new Map<string, { date: string, revenue: number, cogs: number, expense: number, profit: number }>();
+
+        for (const trx of transactions) {
+            const dateStr = trx.createdAt.toISOString().split('T')[0];
+            const current = dailyMap.get(dateStr) || { date: dateStr, revenue: 0, cogs: 0, expense: 0, profit: 0 };
+            current.revenue += trx.total;
+            for (const item of trx.items) {
+                current.cogs += (item.product?.costPrice ?? 0) * item.quantity;
+            }
+            dailyMap.set(dateStr, current);
+        }
+
+        for (const ex of expenses) {
+            const dateStr = ex.createdAt.toISOString().split('T')[0];
+            const current = dailyMap.get(dateStr) || { date: dateStr, revenue: 0, cogs: 0, expense: 0, profit: 0 };
+            current.expense += ex.amount;
+            dailyMap.set(dateStr, current);
+        }
+
+        for (const [dateStr, current] of dailyMap.entries()) {
+            current.profit = current.revenue - (current.cogs + current.expense);
+        }
+
+        return Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    async productProfit(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            transaction: {
+                storeId,
+                status: TransactionStatus.PAID
+            }
+        };
+        if (dateFilter) {
+            where.transaction.createdAt = dateFilter;
+        }
+
+        const items = await this.prisma.transactionItem.findMany({
+            where,
+            include: {
+                product: true
+            }
+        });
+
+        const productProfitMap = new Map<string, { productName: string, sku: string, quantity: number, revenue: number, cost: number, profit: number }>();
+
+        for (const item of items) {
+            const productId = item.productId;
+            const current = productProfitMap.get(productId) || {
+                productName: item.product?.name ?? 'Unknown Product',
+                sku: item.product?.sku ?? '-',
+                quantity: 0,
+                revenue: 0,
+                cost: 0,
+                profit: 0
+            };
+            current.quantity += item.quantity;
+            current.revenue += item.subtotal;
+            current.cost += (item.product?.costPrice ?? 0) * item.quantity;
+            productProfitMap.set(productId, current);
+        }
+
+        for (const [prodId, current] of productProfitMap.entries()) {
+            current.profit = current.revenue - current.cost;
+        }
+
+        return Array.from(productProfitMap.values()).sort((a, b) => b.profit - a.profit);
+    }
+
+    async attendance(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            user: { storeId }
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        return this.prisma.attendance.findMany({
+            where,
+            include: {
+                user: true
+            },
+            orderBy: {
+                clockIn: 'desc'
+            }
+        });
+    }
+
+    async commission(
+        storeId: string,
+        startDate?: string,
+        endDate?: string,
+    ) {
+        const dateFilter = this.buildDateRangeFilter(startDate, endDate);
+        const where: any = {
+            storeId,
+            status: TransactionStatus.PAID
+        };
+        if (dateFilter) {
+            where.createdAt = dateFilter;
+        }
+
+        const transactions = await this.prisma.transaction.findMany({
+            where,
+            include: {
+                cashier: true
+            }
+        });
+
+        const commissionMap = new Map<string, { cashierName: string, count: number, sales: number, commission: number }>();
+
+        for (const trx of transactions) {
+            const cashierId = trx.cashierId;
+            const current = commissionMap.get(cashierId) || {
+                cashierName: trx.cashier.name,
+                count: 0,
+                sales: 0,
+                commission: 0
+            };
+            current.count += 1;
+            current.sales += trx.total;
+            commissionMap.set(cashierId, current);
+        }
+
+        for (const [cashierId, current] of commissionMap.entries()) {
+            current.commission = Math.round(current.sales * 0.01);
+        }
+
+        return Array.from(commissionMap.values()).sort((a, b) => b.commission - a.commission);
+    }
 }

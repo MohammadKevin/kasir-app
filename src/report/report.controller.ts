@@ -134,6 +134,114 @@ export class ReportController {
     )
   }
 
+  @Get('sales-by-outlet/:storeId')
+  salesByOutlet(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByOutlet(storeId, startDate, endDate)
+  }
+
+  @Get('sales-by-date/:storeId')
+  salesByDate(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByDate(storeId, startDate, endDate)
+  }
+
+  @Get('sales-by-hour/:storeId')
+  salesByHour(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByHour(storeId, startDate, endDate)
+  }
+
+  @Get('sales-by-category/:storeId')
+  salesByCategory(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByCategory(storeId, startDate, endDate)
+  }
+
+  @Get('sales-by-customer/:storeId')
+  salesByCustomer(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByCustomer(storeId, startDate, endDate)
+  }
+
+  @Get('sales-by-payment-method/:storeId')
+  salesByPaymentMethod(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.salesByPaymentMethod(storeId, startDate, endDate)
+  }
+
+  @Get('taxes/:storeId')
+  taxes(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.taxes(storeId, startDate, endDate)
+  }
+
+  @Get('promos/:storeId')
+  promos(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.promos(storeId, startDate, endDate)
+  }
+
+  @Get('daily-profit/:storeId')
+  dailyProfit(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.dailyProfit(storeId, startDate, endDate)
+  }
+
+  @Get('product-profit/:storeId')
+  productProfit(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.productProfit(storeId, startDate, endDate)
+  }
+
+  @Get('attendance/:storeId')
+  attendance(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.attendance(storeId, startDate, endDate)
+  }
+
+  @Get('commission/:storeId')
+  commission(
+    @Param('storeId') storeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.commission(storeId, startDate, endDate)
+  }
+
   @Get('sales/:storeId/excel')
   async salesExcel(
     @Res()
