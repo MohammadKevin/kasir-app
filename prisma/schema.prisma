@@ -133,6 +133,7 @@ model User {
   pin   String
 
   isActive Boolean @default(true)
+  isStoreAdmin Boolean @default(false)
   deletedAt DateTime?
 
   admin Admin @relation("AdminCashiers", fields: [adminId], references: [id], onDelete: Cascade)

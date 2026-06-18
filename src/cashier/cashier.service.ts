@@ -83,6 +83,9 @@ export class CashierService {
 
         isActive:
           true,
+
+        isStoreAdmin:
+          dto.isStoreAdmin ?? false,
       },
 
       select: {
@@ -91,6 +94,7 @@ export class CashierService {
         phone: true,
         storeId: true,
         isActive: true,
+        isStoreAdmin: true,
         createdAt: true,
       },
     })
@@ -110,6 +114,7 @@ export class CashierService {
         name: true,
         phone: true,
         isActive: true,
+        isStoreAdmin: true,
         createdAt: true,
       },
 
@@ -162,6 +167,14 @@ export class CashierService {
     ) {
       data.isActive =
         dto.isActive
+    }
+
+    if (
+      dto.isStoreAdmin !==
+      undefined
+    ) {
+      data.isStoreAdmin =
+        dto.isStoreAdmin
     }
 
     if (
@@ -295,6 +308,9 @@ export class CashierService {
 
         storeId:
           cashier.storeId,
+
+        isStoreAdmin:
+          cashier.isStoreAdmin,
       },
     }
   }

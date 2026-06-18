@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsOptional,
   IsString,
   Length,
@@ -18,4 +19,8 @@ export class CreateCashierDto {
   @IsString()
   @Length(4, 6)
   pin!: string
+
+  @IsOptional()
+  @IsBoolean()
+  isStoreAdmin?: boolean
 }

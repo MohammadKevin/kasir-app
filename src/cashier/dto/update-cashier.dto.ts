@@ -22,4 +22,8 @@ export class UpdateCashierDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean
+
+  @IsOptional()
+  @IsBoolean()
+  isStoreAdmin?: boolean
 }
