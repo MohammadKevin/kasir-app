@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Req,
@@ -46,5 +47,14 @@ export class ChatController {
       body.receiverType,
       body.content
     )
+  }
+
+  @Delete('message/:id')
+  @HttpCode(HttpStatus.OK)
+  deleteMessage(
+    @Param('id') id: string,
+    @Req() req: any
+  ) {
+    return this.chatService.deleteMessage(id, req.user.id, req.user.type)
   }
 }

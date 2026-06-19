@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { NotificationService } from '../notification/notification.service'
 
@@ -68,6 +68,26 @@ export class ChatService {
         createdAt: 'asc',
       },
     })
+  }
+
+  async deleteMessage(id: string, userId: string, userType: string) {
+    const message = await this.prisma.chatMessage.findUnique({
+      where: { id },
+    })
+
+    if (!message) {
+      throw new NotFoundException('Pesan tidak ditemukan')
+    }
+
+    if (message.senderId !== userId || message.senderType !== userType) {
+      throw new ForbiddenException('Anda tidak memiliki hak untuk menghapus pesan ini')
+    }
+
+    await this.prisma.chatMessage.delete({
+      where: { id },
+    })
+
+    return { success: true }
   }
 
   async getContacts(userId: string, userType: string) {

@@ -15,15 +15,34 @@ export class AttendanceService {
       throw new NotFoundException('User tidak ditemukan')
     }
 
-    const active = await this.prisma.attendance.findFirst({
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date()
+    endOfDay.setHours(23, 59, 59, 999)
+
+    const existingToday = await this.prisma.attendance.findFirst({
       where: {
         userId: dto.userId,
-        clockOut: null,
+        clockIn: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
     })
 
-    if (active) {
-      throw new BadRequestException('Karyawan sudah melakukan clock-in')
+    if (existingToday) {
+      if (existingToday.clockOut === null) {
+        throw new BadRequestException('Karyawan sudah melakukan clock-in')
+      }
+      return this.prisma.attendance.update({
+        where: { id: existingToday.id },
+        data: {
+          clockOut: null,
+        },
+        include: {
+          user: true,
+        },
+      })
     }
 
     return this.prisma.attendance.create({
