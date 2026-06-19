@@ -127,6 +127,20 @@ export class StockMovementService {
             },
           })
 
+        if (updated.isActive && updated.stock <= updated.minimumStock) {
+          await tx.notification.create({
+            data: {
+              userId: dto.storeId,
+              userType: 'STORE',
+              title: 'Stok Menipis',
+              content: `Stok produk ${product.name} saat ini tinggal ${updated.stock} (batas minimum: ${product.minimumStock})`,
+              isRead: false
+            }
+          }).catch(err => {
+            console.warn('Gagal membuat notifikasi stok menipis:', err.message)
+          })
+        }
+
         const history =
           await tx.stockMovement.create({
             data: {

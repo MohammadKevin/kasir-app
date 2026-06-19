@@ -640,4 +640,33 @@ model StoreAttendance {
   @@map("store_attendances")
 }
 
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  userType  String   // 'ADMIN', 'STORE', 'CASHIER'
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, userType])
+  @@map("notifications")
+}
+
+model ChatMessage {
+  id           String   @id @default(uuid()) @db.Char(36)
+  senderId     String   @db.Char(36)
+  senderType   String   // 'ADMIN', 'STORE', 'CASHIER'
+  senderName   String
+  receiverId   String   @db.Char(36)
+  receiverType String   // 'ADMIN', 'STORE', 'CASHIER'
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([senderId, senderType])
+  @@index([receiverId, receiverType])
+  @@map("chat_messages")
+}
+
+
 

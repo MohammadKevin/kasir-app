@@ -103,10 +103,24 @@ export class TransactionService {
           subtotal: finalPrice * item.quantity,
         });
 
-        await tx.product.update({
+        const updatedProduct = await tx.product.update({
           where: { id: product.id },
           data: { stock: { decrement: item.quantity } }
         });
+
+        if (updatedProduct.isActive && updatedProduct.stock <= updatedProduct.minimumStock) {
+          await tx.notification.create({
+            data: {
+              userId: dto.storeId,
+              userType: 'STORE',
+              title: 'Stok Menipis',
+              content: `Stok produk ${product.name} saat ini tinggal ${updatedProduct.stock} (batas minimum: ${product.minimumStock})`,
+              isRead: false
+            }
+          }).catch(err => {
+            console.warn('Gagal membuat notifikasi stok menipis:', err.message)
+          })
+        }
       }
       const finalSubtotal = dto.subtotal !== undefined ? dto.subtotal : subtotal;
       const finalTotalDiscount = dto.totalDiscount !== undefined ? dto.totalDiscount : totalDiscount;

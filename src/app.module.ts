@@ -24,6 +24,8 @@ import { ReportModule } from './report/report.module';
 import { TableModule } from './table/table.module';
 import { IngredientModule } from './ingredient/ingredient.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { NotificationModule } from './notification/notification.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AttendanceModule } from './attendance/attendance.module';
     TableModule,
     IngredientModule,
     AttendanceModule,
+    NotificationModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
