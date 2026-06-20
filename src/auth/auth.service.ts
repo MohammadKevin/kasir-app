@@ -57,7 +57,8 @@ export class AuthService {
         )
       }
 
-      // Check existing session
+      // Check existing session (Bypassed to allow concurrent device usage)
+      /*
       const existingSession = await this.prisma.session.findUnique({
         where: { userId_userType: { userId: admin.id, userType: 'ADMIN' } }
       })
@@ -70,6 +71,7 @@ export class AuthService {
           )
         }
       }
+      */
 
       const accessToken = await this.jwt.signAsync({
         sub: admin.id,
@@ -131,7 +133,8 @@ export class AuthService {
       )
     }
 
-    // Check existing session
+    // Check existing session (Bypassed to allow concurrent device usage)
+    /*
     const existingSession = await this.prisma.session.findUnique({
       where: { userId_userType: { userId: store.id, userType: 'STORE' } }
     })
@@ -144,6 +147,7 @@ export class AuthService {
         )
       }
     }
+    */
 
     const accessToken = await this.jwt.signAsync({
       sub: store.id,

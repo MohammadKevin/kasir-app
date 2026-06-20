@@ -61,12 +61,15 @@ export class JwtStrategy extends PassportStrategy(
       )
     }
 
+    // Check token matches session (Bypassed to allow concurrent device usage)
+    /*
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req)
     if (session.token !== token) {
       throw new UnauthorizedException(
         'Sesi Anda telah aktif di perangkat lain.',
       )
     }
+    */
 
     const oneMinuteAgo = new Date(Date.now() - 60000)
     if (session.lastActive < oneMinuteAgo) {
