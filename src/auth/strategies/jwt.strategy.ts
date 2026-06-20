@@ -46,6 +46,8 @@ export class JwtStrategy extends PassportStrategy(
       type: string
     },
   ) {
+    // Session checks bypassed to allow independent login/logout on multiple devices (stateless JWT)
+    /*
     const session = await this.prisma.session.findUnique({
       where: {
         userId_userType: {
@@ -62,14 +64,12 @@ export class JwtStrategy extends PassportStrategy(
     }
 
     // Check token matches session (Bypassed to allow concurrent device usage)
-    /*
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req)
     if (session.token !== token) {
       throw new UnauthorizedException(
         'Sesi Anda telah aktif di perangkat lain.',
       )
     }
-    */
 
     const oneMinuteAgo = new Date(Date.now() - 60000)
     if (session.lastActive < oneMinuteAgo) {
@@ -85,6 +85,7 @@ export class JwtStrategy extends PassportStrategy(
         },
       }).catch(() => {})
     }
+    */
 
     if (
       payload.type ===
