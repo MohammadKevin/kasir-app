@@ -100,11 +100,7 @@ export class ShiftService {
       )
     }
 
-    const salesGroup = await this.prisma.transaction.groupBy({
-      by: ['paymentMethod'],
-      _sum: {
-        total: true,
-      },
+    const transactions = await this.prisma.transaction.findMany({
       where: {
         storeId: shift.storeId,
         cashierId: shift.userId,
@@ -121,13 +117,29 @@ export class ShiftService {
     let transferSales = 0
     let creditSales = 0
 
-    for (const group of salesGroup) {
-      const amount = group._sum.total ?? 0
-      if (group.paymentMethod === 'CASH') cashSales = amount
-      else if (group.paymentMethod === 'QRIS') qrisSales = amount
-      else if (group.paymentMethod === 'DEBIT') debitSales = amount
-      else if (group.paymentMethod === 'TRANSFER') transferSales = amount
-      else if (group.paymentMethod === 'CREDIT') creditSales = amount
+    for (const tx of transactions) {
+      if (tx.paymentMethod === 'SPLIT' && tx.splitPayments) {
+        let split: any = {}
+        try {
+          split = typeof tx.splitPayments === 'string'
+            ? JSON.parse(tx.splitPayments)
+            : tx.splitPayments
+        } catch (e) {
+          console.error('Error parsing splitPayments:', e)
+        }
+        if (split) {
+          if (split.CASH) cashSales += Number(split.CASH)
+          if (split.QRIS) qrisSales += Number(split.QRIS)
+          if (split.DEBIT) debitSales += Number(split.DEBIT)
+        }
+      } else {
+        const amount = Number(tx.total || 0)
+        if (tx.paymentMethod === 'CASH') cashSales += amount
+        else if (tx.paymentMethod === 'QRIS') qrisSales += amount
+        else if (tx.paymentMethod === 'DEBIT') debitSales += amount
+        else if (tx.paymentMethod === 'TRANSFER') transferSales += amount
+        else if (tx.paymentMethod === 'CREDIT') creditSales += amount
+      }
     }
 
     const expectedCash =
