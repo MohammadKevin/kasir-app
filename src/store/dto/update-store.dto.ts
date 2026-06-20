@@ -5,69 +5,69 @@ import {
   MinLength,
   IsBoolean,
   IsNumber,
-} from 'class-validator'
+} from 'class-validator';
 
 export class UpdateStoreDto {
   @IsOptional()
   @IsString()
-  name?: string
+  name?: string;
 
   @IsOptional()
   @IsEmail()
-  email?: string
+  email?: string;
 
   @IsOptional()
   @MinLength(6)
-  password?: string
+  password?: string;
 
   @IsOptional()
   @IsString()
-  phone?: string
+  phone?: string;
 
   @IsOptional()
   @IsString()
-  address?: string
+  address?: string;
 
   @IsOptional()
   @IsString()
-  logo?: string
+  logo?: string;
 
   @IsOptional()
-  isActive?: boolean
-
-  @IsOptional()
-  @IsString()
-  receiptHeader?: string
+  isActive?: boolean;
 
   @IsOptional()
   @IsString()
-  receiptFooter?: string
+  receiptHeader?: string;
+
+  @IsOptional()
+  @IsString()
+  receiptFooter?: string;
 
   @IsOptional()
   @IsBoolean()
-  receiptShowBarcode?: boolean
+  receiptShowBarcode?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  receiptShowCustomer?: boolean
+  receiptShowCustomer?: boolean;
 
   @IsOptional()
   @IsString()
-  receiptSize?: string
+  receiptSize?: string;
 
   @IsOptional()
   @IsNumber()
-  taxRate?: number
+  taxRate?: number;
 
   @IsOptional()
   @IsNumber()
-  serviceRate?: number
+  serviceRate?: number;
 
   @IsOptional()
   @IsBoolean()
-  pointsEnabled?: boolean
+  pointsEnabled?: boolean;
 
   @IsOptional()
   @IsNumber()
-  pointValue?: number
+  pointValue?: number;
 }

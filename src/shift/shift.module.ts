@@ -1,25 +1,17 @@
-import { Module } from '@nestjs/common'
+import { Module } from '@nestjs/common';
 
-import { PrismaModule } from '../prisma/prisma.module'
+import { PrismaModule } from '../prisma/prisma.module';
 
-import { ShiftController } from './shift.controller'
-import { ShiftService } from './shift.service'
+import { ShiftController } from './shift.controller';
+import { ShiftService } from './shift.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-  ],
+  imports: [PrismaModule],
 
-  controllers: [
-    ShiftController,
-  ],
+  controllers: [ShiftController],
 
-  providers: [
-    ShiftService,
-  ],
+  providers: [ShiftService],
 
-  exports: [
-    ShiftService,
-  ],
+  exports: [ShiftService],
 })
 export class ShiftModule {}

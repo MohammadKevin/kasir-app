@@ -6,62 +6,62 @@ import {
   IsUUID,
   Max,
   Min,
-} from 'class-validator'
+} from 'class-validator';
 
-import { Type } from 'class-transformer'
+import { Type } from 'class-transformer';
 
 export class UpdateProductDto {
   @IsOptional()
   @IsUUID()
-  categoryId?: string
+  categoryId?: string;
 
   @IsOptional()
   @IsString()
-  name?: string
+  name?: string;
 
   @IsOptional()
   @IsString()
-  image?: string
+  image?: string;
 
   @IsOptional()
   @IsString()
-  sku?: string
+  sku?: string;
 
   @IsOptional()
   @IsString()
-  barcode?: string
+  barcode?: string;
 
   @IsOptional()
   @IsString()
-  description?: string
+  description?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(2147483647)
-  costPrice?: number
+  costPrice?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(2147483647)
-  sellingPrice?: number
+  sellingPrice?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  stock?: number
+  stock?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  minimumStock?: number
+  minimumStock?: number;
 
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean
+  isActive?: boolean;
 }

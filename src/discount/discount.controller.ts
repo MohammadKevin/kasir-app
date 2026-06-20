@@ -7,29 +7,27 @@ import {
   Patch,
   Post,
   UseGuards,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 
-import { DiscountService } from './discount.service'
+import { DiscountService } from './discount.service';
 
-import { CreateDiscountDto } from './dto/create-discount.dto'
-import { UpdateDiscountDto } from './dto/update-discount.dto'
-import { AssignProductDto } from './dto/assign-product.dto'
+import { CreateDiscountDto } from './dto/create-discount.dto';
+import { UpdateDiscountDto } from './dto/update-discount.dto';
+import { AssignProductDto } from './dto/assign-product.dto';
 
 @Controller('discounts')
 @UseGuards(JwtAuthGuard)
 export class DiscountController {
-  constructor(
-    private readonly discountService: DiscountService,
-  ) {}
+  constructor(private readonly discountService: DiscountService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateDiscountDto,
   ) {
-    return this.discountService.create(dto)
+    return this.discountService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -37,9 +35,7 @@ export class DiscountController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.discountService.findAll(
-      storeId,
-    )
+    return this.discountService.findAll(storeId);
   }
 
   @Get(':id')
@@ -47,9 +43,7 @@ export class DiscountController {
     @Param('id')
     id: string,
   ) {
-    return this.discountService.findOne(
-      id,
-    )
+    return this.discountService.findOne(id);
   }
 
   @Patch(':id')
@@ -60,10 +54,7 @@ export class DiscountController {
     @Body()
     dto: UpdateDiscountDto,
   ) {
-    return this.discountService.update(
-      id,
-      dto,
-    )
+    return this.discountService.update(id, dto);
   }
 
   @Delete(':id')
@@ -71,9 +62,7 @@ export class DiscountController {
     @Param('id')
     id: string,
   ) {
-    return this.discountService.remove(
-      id,
-    )
+    return this.discountService.remove(id);
   }
 
   @Post(':discountId/products')
@@ -84,10 +73,7 @@ export class DiscountController {
     @Body()
     dto: AssignProductDto,
   ) {
-    return this.discountService.assignProduct(
-      discountId,
-      dto,
-    )
+    return this.discountService.assignProduct(discountId, dto);
   }
 
   @Delete(':discountId/products/:productId')
@@ -98,9 +84,6 @@ export class DiscountController {
     @Param('productId')
     productId: string,
   ) {
-    return this.discountService.removeProduct(
-      discountId,
-      productId,
-    )
+    return this.discountService.removeProduct(discountId, productId);
   }
 }

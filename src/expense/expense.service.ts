@@ -1,43 +1,33 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
-import { CreateExpenseDto } from './dto/create-expense.dto'
-import { UpdateExpenseDto } from './dto/update-expense.dto'
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Injectable()
 export class ExpenseService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    dto: CreateExpenseDto,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id: dto.storeId,
-        },
-      })
+  async create(dto: CreateExpenseDto) {
+    const store = await this.prisma.store.findUnique({
+      where: {
+        id: dto.storeId,
+      },
+    });
 
     if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
+      throw new NotFoundException('Store tidak ditemukan');
     }
 
-    const expenseDate = dto.createdAt ? new Date(dto.createdAt) : new Date()
+    const expenseDate = dto.createdAt ? new Date(dto.createdAt) : new Date();
 
     const allocateExpense = async (
       targetDate: Date,
       amountToAllocate: number,
       depth = 0,
     ): Promise<any> => {
-      if (amountToAllocate <= 0) return null
+      if (amountToAllocate <= 0) return null;
 
       if (depth >= 30) {
         return this.prisma.expense.create({
@@ -48,13 +38,13 @@ export class ExpenseService {
             amount: amountToAllocate,
             createdAt: targetDate,
           },
-        })
+        });
       }
 
-      const startOfDay = new Date(targetDate)
-      startOfDay.setHours(0, 0, 0, 0)
-      const endOfDay = new Date(targetDate)
-      endOfDay.setHours(23, 59, 59, 999)
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
       const salesAgg = await this.prisma.transaction.aggregate({
         _sum: {
@@ -68,8 +58,8 @@ export class ExpenseService {
             lte: endOfDay,
           },
         },
-      })
-      const dayRevenue = salesAgg._sum.total ?? 0
+      });
+      const dayRevenue = salesAgg._sum.total ?? 0;
 
       const expensesAgg = await this.prisma.expense.aggregate({
         _sum: {
@@ -82,10 +72,10 @@ export class ExpenseService {
             lte: endOfDay,
           },
         },
-      })
-      const dayExpenses = expensesAgg._sum.amount ?? 0
+      });
+      const dayExpenses = expensesAgg._sum.amount ?? 0;
 
-      const availableRevenue = Math.max(0, dayRevenue - dayExpenses)
+      const availableRevenue = Math.max(0, dayRevenue - dayExpenses);
 
       if (availableRevenue >= amountToAllocate) {
         return this.prisma.expense.create({
@@ -96,76 +86,66 @@ export class ExpenseService {
             amount: amountToAllocate,
             createdAt: targetDate,
           },
-        })
+        });
       } else {
-        let createdRecord: any = null
+        let createdRecord: any = null;
         if (availableRevenue > 0) {
           createdRecord = await this.prisma.expense.create({
             data: {
               storeId: dto.storeId,
-              title: depth > 0 ? `${dto.title} (Alokasi H-${depth})` : dto.title,
+              title:
+                depth > 0 ? `${dto.title} (Alokasi H-${depth})` : dto.title,
               category: dto.category,
               amount: availableRevenue,
               createdAt: targetDate,
             },
-          })
+          });
         }
 
-        const prevDate = new Date(targetDate)
-        prevDate.setDate(prevDate.getDate() - 1)
+        const prevDate = new Date(targetDate);
+        prevDate.setDate(prevDate.getDate() - 1);
 
         const nextRecord = await allocateExpense(
           prevDate,
           amountToAllocate - availableRevenue,
           depth + 1,
-        )
+        );
 
-        return createdRecord || nextRecord
+        return createdRecord || nextRecord;
       }
-    }
+    };
 
-    return allocateExpense(expenseDate, dto.amount)
+    return allocateExpense(expenseDate, dto.amount);
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.expense.findMany({
       where: {
         storeId,
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const expense =
-      await this.prisma.expense.findUnique({
-        where: {
-          id,
-        },
-      })
+  async findOne(id: string) {
+    const expense = await this.prisma.expense.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!expense) {
-      throw new NotFoundException(
-        'Expense tidak ditemukan',
-      )
+      throw new NotFoundException('Expense tidak ditemukan');
     }
 
-    return expense
+    return expense;
   }
 
-  async update(
-    id: string,
-    dto: UpdateExpenseDto,
-  ) {
-    await this.findOne(id)
+  async update(id: string, dto: UpdateExpenseDto) {
+    await this.findOne(id);
 
     return this.prisma.expense.update({
       where: {
@@ -173,43 +153,36 @@ export class ExpenseService {
       },
 
       data: dto,
-    })
+    });
   }
 
-  async remove(
-    id: string,
-  ) {
-    await this.findOne(id)
+  async remove(id: string) {
+    await this.findOne(id);
 
     await this.prisma.expense.delete({
       where: {
         id,
       },
-    })
+    });
 
     return {
-      message:
-        'Expense berhasil dihapus',
-    }
+      message: 'Expense berhasil dihapus',
+    };
   }
 
-  async summary(
-    storeId: string,
-  ) {
-    const result =
-      await this.prisma.expense.aggregate({
-        _sum: {
-          amount: true,
-        },
+  async summary(storeId: string) {
+    const result = await this.prisma.expense.aggregate({
+      _sum: {
+        amount: true,
+      },
 
-        where: {
-          storeId,
-        },
-      })
+      where: {
+        storeId,
+      },
+    });
 
     return {
-      totalExpense:
-        result._sum.amount ?? 0,
-    }
+      totalExpense: result._sum.amount ?? 0,
+    };
   }
 }

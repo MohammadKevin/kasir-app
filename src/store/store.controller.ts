@@ -21,9 +21,7 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 @Controller('stores')
 @UseGuards(JwtAuthGuard)
 export class StoreController {
-  constructor(
-    private readonly storeService: StoreService,
-  ) { }
+  constructor(private readonly storeService: StoreService) {}
 
   @Post()
   create(
@@ -38,10 +36,7 @@ export class StoreController {
     @Body()
     dto: CreateStoreDto,
   ) {
-    return this.storeService.create(
-      req.user.id,
-      dto,
-    );
+    return this.storeService.create(req.user.id, dto);
   }
 
   @Get()
@@ -53,9 +48,7 @@ export class StoreController {
       };
     },
   ) {
-    return this.storeService.findAll(
-      req.user.id,
-    );
+    return this.storeService.findAll(req.user.id);
   }
 
   @Get(':id')
@@ -63,9 +56,7 @@ export class StoreController {
     @Param('id')
     id: string,
   ) {
-    return this.storeService.findOne(
-      id,
-    );
+    return this.storeService.findOne(id);
   }
 
   @Patch(':id')
@@ -76,28 +67,21 @@ export class StoreController {
     @Body()
     dto: UpdateStoreDto,
   ) {
-    return this.storeService.update(
-      id,
-      dto,
-    );
+    return this.storeService.update(id, dto);
   }
 
   @Delete(':id')
-
   remove(
     @Req()
     req: Request & {
       user: {
-        id: string
-      }
+        id: string;
+      };
     },
 
     @Param('id')
     id: string,
   ) {
-    return this.storeService.remove(
-      req.user.id,
-      id,
-    )
+    return this.storeService.remove(req.user.id, id);
   }
 }

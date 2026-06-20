@@ -1,18 +1,18 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateIngredientDto {
   @IsString()
   @IsNotEmpty()
-  storeId: string
+  storeId: string;
 
   @IsString()
   @IsNotEmpty()
-  name: string
+  name: string;
 
   @IsNumber()
-  stock: number
+  stock: number;
 
   @IsString()
   @IsNotEmpty()
-  unit: string
+  unit: string;
 }

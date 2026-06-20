@@ -4,30 +4,30 @@ import {
   IsInt,
   IsOptional,
   IsString,
-} from 'class-validator'
+} from 'class-validator';
 
-import { DiscountType } from '@prisma/client'
+import { DiscountType } from '@prisma/client';
 
 export class UpdateDiscountDto {
   @IsOptional()
   @IsString()
-  name?: string
+  name?: string;
 
   @IsOptional()
   @IsEnum(DiscountType)
-  type?: DiscountType
+  type?: DiscountType;
 
   @IsOptional()
   @IsInt()
-  value?: number
+  value?: number;
 
   @IsOptional()
   @IsBoolean()
-  isActive?: boolean
+  isActive?: boolean;
 
   @IsOptional()
-  startDate?: Date
+  startDate?: Date;
 
   @IsOptional()
-  endDate?: Date
+  endDate?: Date;
 }

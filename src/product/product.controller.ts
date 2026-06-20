@@ -7,30 +7,26 @@ import {
   Patch,
   Post,
   UseGuards,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 
-import { ProductService } from './product.service'
+import { ProductService } from './product.service';
 
-import { CreateProductDto } from './dto/create-product.dto'
-import { UpdateProductDto } from './dto/update-product.dto'
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
 export class ProductController {
-  constructor(
-    private readonly productService: ProductService,
-  ) { }
+  constructor(private readonly productService: ProductService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateProductDto,
   ) {
-    return this.productService.create(
-      dto,
-    )
+    return this.productService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -38,9 +34,7 @@ export class ProductController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.productService.findAll(
-      storeId,
-    )
+    return this.productService.findAll(storeId);
   }
 
   @Get('barcode/:barcode')
@@ -48,9 +42,7 @@ export class ProductController {
     @Param('barcode')
     barcode: string,
   ) {
-    return this.productService.findByBarcode(
-      barcode,
-    )
+    return this.productService.findByBarcode(barcode);
   }
 
   @Get(':id')
@@ -58,9 +50,7 @@ export class ProductController {
     @Param('id')
     id: string,
   ) {
-    return this.productService.findOne(
-      id,
-    )
+    return this.productService.findOne(id);
   }
 
   @Post(':id/generate-barcode')
@@ -68,9 +58,7 @@ export class ProductController {
     @Param('id')
     id: string,
   ) {
-    return this.productService.generateBarcode(
-      id,
-    )
+    return this.productService.generateBarcode(id);
   }
 
   @Get('scan/:barcode')
@@ -78,21 +66,15 @@ export class ProductController {
     @Param('barcode')
     barcode: string,
   ) {
-    return this.productService.findByBarcode(
-      barcode,
-    )
+    return this.productService.findByBarcode(barcode);
   }
 
-  @Post(
-    'store/:storeId/generate-barcodes',
-  )
+  @Post('store/:storeId/generate-barcodes')
   generateAllBarcodes(
     @Param('storeId')
     storeId: string,
   ) {
-    return this.productService.generateAllBarcodes(
-      storeId,
-    )
+    return this.productService.generateAllBarcodes(storeId);
   }
 
   @Patch(':id')
@@ -103,10 +85,7 @@ export class ProductController {
     @Body()
     dto: UpdateProductDto,
   ) {
-    return this.productService.update(
-      id,
-      dto,
-    )
+    return this.productService.update(id, dto);
   }
 
   @Patch(':id/stock')
@@ -116,13 +95,10 @@ export class ProductController {
 
     @Body()
     body: {
-      stock: number
+      stock: number;
     },
   ) {
-    return this.productService.updateStock(
-      id,
-      body.stock,
-    )
+    return this.productService.updateStock(id, body.stock);
   }
 
   @Delete(':id')
@@ -130,8 +106,6 @@ export class ProductController {
     @Param('id')
     id: string,
   ) {
-    return this.productService.remove(
-      id,
-    )
+    return this.productService.remove(id);
   }
 }

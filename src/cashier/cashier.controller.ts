@@ -8,22 +8,20 @@ import {
   Post,
   Req,
   UseGuards,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 
-import { CashierService } from './cashier.service'
+import { CashierService } from './cashier.service';
 
-import { CreateCashierDto } from './dto/create-cashier.dto'
-import { UpdateCashierDto } from './dto/update-cashier.dto'
-import { LoginPinDto } from './dto/login-pin.dto'
-import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto'
+import { CreateCashierDto } from './dto/create-cashier.dto';
+import { UpdateCashierDto } from './dto/update-cashier.dto';
+import { LoginPinDto } from './dto/login-pin.dto';
+import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto';
 
 @Controller('cashier')
 export class CashierController {
-  constructor(
-    private readonly cashierService: CashierService,
-  ) {}
+  constructor(private readonly cashierService: CashierService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -34,10 +32,7 @@ export class CashierController {
     @Body()
     dto: CreateCashierDto,
   ) {
-    return this.cashierService.create(
-      req.user.id,
-      dto,
-    )
+    return this.cashierService.create(req.user.id, dto);
   }
 
   @Get('store/:storeId')
@@ -46,9 +41,7 @@ export class CashierController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.cashierService.findAll(
-      storeId,
-    )
+    return this.cashierService.findAll(storeId);
   }
 
   @Get(':id')
@@ -57,9 +50,7 @@ export class CashierController {
     @Param('id')
     id: string,
   ) {
-    return this.cashierService.findOne(
-      id,
-    )
+    return this.cashierService.findOne(id);
   }
 
   @Patch(':id')
@@ -71,10 +62,7 @@ export class CashierController {
     @Body()
     dto: UpdateCashierDto,
   ) {
-    return this.cashierService.update(
-      id,
-      dto,
-    )
+    return this.cashierService.update(id, dto);
   }
 
   @Delete(':id')
@@ -83,9 +71,7 @@ export class CashierController {
     @Param('id')
     id: string,
   ) {
-    return this.cashierService.remove(
-      id,
-    )
+    return this.cashierService.remove(id);
   }
 
   @Post('login-pin')
@@ -93,9 +79,7 @@ export class CashierController {
     @Body()
     dto: LoginPinDto,
   ) {
-    return this.cashierService.loginPin(
-      dto,
-    )
+    return this.cashierService.loginPin(dto);
   }
 
   @Post('verify-admin-pin')
@@ -103,8 +87,6 @@ export class CashierController {
     @Body()
     dto: VerifyAdminPinDto,
   ) {
-    return this.cashierService.verifyAdminPin(
-      dto,
-    )
+    return this.cashierService.verifyAdminPin(dto);
   }
 }

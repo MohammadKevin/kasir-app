@@ -6,27 +6,23 @@ import {
   Param,
   Patch,
   Post,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { SupplierService } from './supplier.service'
+import { SupplierService } from './supplier.service';
 
-import { CreateSupplierDto } from './dto/create-supplier.dto'
-import { UpdateSupplierDto } from './dto/update-supplier.dto'
+import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { UpdateSupplierDto } from './dto/update-supplier.dto';
 
 @Controller('suppliers')
 export class SupplierController {
-  constructor(
-    private readonly supplierService: SupplierService,
-  ) {}
+  constructor(private readonly supplierService: SupplierService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateSupplierDto,
   ) {
-    return this.supplierService.create(
-      dto,
-    )
+    return this.supplierService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -34,9 +30,7 @@ export class SupplierController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.supplierService.findAll(
-      storeId,
-    )
+    return this.supplierService.findAll(storeId);
   }
 
   @Get(':id')
@@ -44,9 +38,7 @@ export class SupplierController {
     @Param('id')
     id: string,
   ) {
-    return this.supplierService.findOne(
-      id,
-    )
+    return this.supplierService.findOne(id);
   }
 
   @Patch(':id')
@@ -57,10 +49,7 @@ export class SupplierController {
     @Body()
     dto: UpdateSupplierDto,
   ) {
-    return this.supplierService.update(
-      id,
-      dto,
-    )
+    return this.supplierService.update(id, dto);
   }
 
   @Delete(':id')
@@ -68,8 +57,6 @@ export class SupplierController {
     @Param('id')
     id: string,
   ) {
-    return this.supplierService.remove(
-      id,
-    )
+    return this.supplierService.remove(id);
   }
 }

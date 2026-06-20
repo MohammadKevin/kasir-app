@@ -1,27 +1,20 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common';
 
-import {
-  AuditAction,
-} from '@prisma/client'
+import { AuditAction } from '@prisma/client';
 
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuditLogService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    userId: string,
-    action: AuditAction,
-  ) {
+  async create(userId: string, action: AuditAction) {
     return this.prisma.auditLog.create({
       data: {
         userId,
         action,
       },
-    })
+    });
   }
 
   async findAll() {
@@ -31,15 +24,12 @@ export class AuditLogService {
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findByUser(
-    userId: string,
-  ) {
+  async findByUser(userId: string) {
     return this.prisma.auditLog.findMany({
       where: {
         userId,
@@ -50,9 +40,8 @@ export class AuditLogService {
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 }

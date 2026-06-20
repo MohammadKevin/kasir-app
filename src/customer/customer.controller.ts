@@ -6,27 +6,23 @@ import {
   Param,
   Patch,
   Post,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { CustomerService } from './customer.service'
+import { CustomerService } from './customer.service';
 
-import { CreateCustomerDto } from './dto/create-customer.dto'
-import { UpdateCustomerDto } from './dto/update-customer.dto'
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Controller('customers')
 export class CustomerController {
-  constructor(
-    private readonly customerService: CustomerService,
-  ) {}
+  constructor(private readonly customerService: CustomerService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateCustomerDto,
   ) {
-    return this.customerService.create(
-      dto,
-    )
+    return this.customerService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -34,9 +30,7 @@ export class CustomerController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.customerService.findAll(
-      storeId,
-    )
+    return this.customerService.findAll(storeId);
   }
 
   @Get('phone/:phone')
@@ -44,9 +38,7 @@ export class CustomerController {
     @Param('phone')
     phone: string,
   ) {
-    return this.customerService.findByPhone(
-      phone,
-    )
+    return this.customerService.findByPhone(phone);
   }
 
   @Get(':id')
@@ -54,9 +46,7 @@ export class CustomerController {
     @Param('id')
     id: string,
   ) {
-    return this.customerService.findOne(
-      id,
-    )
+    return this.customerService.findOne(id);
   }
 
   @Patch(':id')
@@ -67,10 +57,7 @@ export class CustomerController {
     @Body()
     dto: UpdateCustomerDto,
   ) {
-    return this.customerService.update(
-      id,
-      dto,
-    )
+    return this.customerService.update(id, dto);
   }
 
   @Delete(':id')
@@ -78,8 +65,6 @@ export class CustomerController {
     @Param('id')
     id: string,
   ) {
-    return this.customerService.remove(
-      id,
-    )
+    return this.customerService.remove(id);
   }
 }

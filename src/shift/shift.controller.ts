@@ -6,31 +6,26 @@ import {
   Post,
   Req,
   UseGuards,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 
-import { ShiftService } from './shift.service'
+import { ShiftService } from './shift.service';
 
-import { OpenShiftDto } from './dto/open-shift.dto'
-import { CloseShiftDto } from './dto/close-shift.dto'
+import { OpenShiftDto } from './dto/open-shift.dto';
+import { CloseShiftDto } from './dto/close-shift.dto';
 
 @Controller('shifts')
 @UseGuards(JwtAuthGuard)
 export class ShiftController {
-  constructor(
-    private readonly shiftService: ShiftService,
-  ) {}
+  constructor(private readonly shiftService: ShiftService) {}
 
   @Post('open')
   open(
     @Body()
     dto: OpenShiftDto,
   ) {
-    return this.shiftService.open(
-      dto.userId,
-      dto,
-    )
+    return this.shiftService.open(dto.userId, dto);
   }
 
   @Post(':id/close')
@@ -41,10 +36,7 @@ export class ShiftController {
     @Body()
     dto: CloseShiftDto,
   ) {
-    return this.shiftService.close(
-      id,
-      dto.closingCash,
-    )
+    return this.shiftService.close(id, dto.closingCash);
   }
 
   @Get('store/:storeId')
@@ -52,8 +44,6 @@ export class ShiftController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.shiftService.findAll(
-      storeId,
-    )
+    return this.shiftService.findAll(storeId);
   }
 }

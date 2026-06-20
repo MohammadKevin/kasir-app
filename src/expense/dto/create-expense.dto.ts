@@ -1,32 +1,22 @@
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator'
+import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-import {
-  ExpenseCategory,
-} from '@prisma/client'
+import { ExpenseCategory } from '@prisma/client';
 
 export class CreateExpenseDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
-  title!: string
+  title!: string;
 
   @IsInt()
   @Min(1)
-  amount!: number
+  amount!: number;
 
-  @IsEnum(
-    ExpenseCategory,
-  )
-  category!: ExpenseCategory
+  @IsEnum(ExpenseCategory)
+  category!: ExpenseCategory;
 
   @IsOptional()
   @IsString()
-  createdAt?: string
+  createdAt?: string;
 }

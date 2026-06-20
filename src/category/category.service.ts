@@ -2,24 +2,22 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import { CreateCategoryDto } from './dto/create-category.dto'
-import { UpdateCategoryDto } from './dto/update-category.dto'
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoryService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCategoryDto) {
     const store = await this.prisma.store.findUnique({
       where: { id: dto.storeId },
-    })
+    });
 
     if (!store) {
-      throw new NotFoundException('Store tidak ditemukan')
+      throw new NotFoundException('Store tidak ditemukan');
     }
 
     const exist = await this.prisma.category.findFirst({
@@ -27,10 +25,10 @@ export class CategoryService {
         storeId: dto.storeId,
         name: dto.name,
       },
-    })
+    });
 
     if (exist) {
-      throw new ConflictException('Kategori sudah ada')
+      throw new ConflictException('Kategori sudah ada');
     }
 
     return this.prisma.category.create({
@@ -39,7 +37,7 @@ export class CategoryService {
         name: dto.name,
         description: dto.description || null,
       },
-    })
+    });
   }
 
   async findAll(storeId: string) {
@@ -55,7 +53,7 @@ export class CategoryService {
       orderBy: {
         name: 'asc',
       },
-    })
+    });
   }
 
   async findOne(id: string) {
@@ -64,17 +62,17 @@ export class CategoryService {
       include: {
         products: true,
       },
-    })
+    });
 
     if (!category) {
-      throw new NotFoundException('Kategori tidak ditemukan')
+      throw new NotFoundException('Kategori tidak ditemukan');
     }
 
-    return category
+    return category;
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
-    await this.findOne(id)
+    await this.findOne(id);
 
     return this.prisma.category.update({
       where: { id },
@@ -83,18 +81,18 @@ export class CategoryService {
         description: dto.description,
         isActive: dto.isActive,
       },
-    })
+    });
   }
 
   async remove(id: string) {
-    await this.findOne(id)
+    await this.findOne(id);
 
     await this.prisma.category.delete({
       where: { id },
-    })
+    });
 
     return {
       message: 'Kategori berhasil dihapus',
-    }
+    };
   }
 }

@@ -8,10 +8,10 @@ import {
   Req,
   UseGuards,
   HttpCode,
-  HttpStatus
-} from '@nestjs/common'
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
-import { ChatService } from './chat.service'
+  HttpStatus,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { ChatService } from './chat.service';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -20,41 +20,49 @@ export class ChatController {
 
   @Get('contacts')
   getContacts(@Req() req: any) {
-    return this.chatService.getContacts(req.user.id, req.user.type)
+    return this.chatService.getContacts(req.user.id, req.user.type);
   }
 
   @Get('messages/:receiverId/:receiverType')
   getMessages(
     @Param('receiverId') receiverId: string,
     @Param('receiverType') receiverType: string,
-    @Req() req: any
+    @Req() req: any,
   ) {
-    return this.chatService.getMessages(req.user.id, req.user.type, receiverId, receiverType)
+    return this.chatService.getMessages(
+      req.user.id,
+      req.user.type,
+      receiverId,
+      receiverType,
+    );
   }
 
   @Post('send')
   @HttpCode(HttpStatus.OK)
   sendMessage(
     @Req() req: any,
-    @Body() body: { receiverId: string; receiverType: string; content: string; senderName?: string }
+    @Body()
+    body: {
+      receiverId: string;
+      receiverType: string;
+      content: string;
+      senderName?: string;
+    },
   ) {
-    const senderName = body.senderName || req.user.name || 'User'
+    const senderName = body.senderName || req.user.name || 'User';
     return this.chatService.sendMessage(
       req.user.id,
       req.user.type,
       senderName,
       body.receiverId,
       body.receiverType,
-      body.content
-    )
+      body.content,
+    );
   }
 
   @Delete('message/:id')
   @HttpCode(HttpStatus.OK)
-  deleteMessage(
-    @Param('id') id: string,
-    @Req() req: any
-  ) {
-    return this.chatService.deleteMessage(id, req.user.id, req.user.type)
+  deleteMessage(@Param('id') id: string, @Req() req: any) {
+    return this.chatService.deleteMessage(id, req.user.id, req.user.type);
   }
 }

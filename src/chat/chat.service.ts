@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import { NotificationService } from '../notification/notification.service'
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ChatService {
@@ -26,19 +30,24 @@ export class ChatService {
         receiverType,
         content,
       },
-    })
+    });
 
     // Create a notification for the recipient
-    await this.notificationService.create(
-      receiverId,
-      receiverType,
-      'Pesan Baru',
-      `${senderName}: "${content.slice(0, 40)}${content.length > 40 ? '...' : ''}"`,
-    ).catch(err => {
-      console.warn('Failed to generate notification for new message:', err.message)
-    })
+    await this.notificationService
+      .create(
+        receiverId,
+        receiverType,
+        'Pesan Baru',
+        `${senderName}: "${content.slice(0, 40)}${content.length > 40 ? '...' : ''}"`,
+      )
+      .catch((err) => {
+        console.warn(
+          'Failed to generate notification for new message:',
+          err.message,
+        );
+      });
 
-    return message
+    return message;
   }
 
   async getMessages(
@@ -67,27 +76,29 @@ export class ChatService {
       orderBy: {
         createdAt: 'asc',
       },
-    })
+    });
   }
 
   async deleteMessage(id: string, userId: string, userType: string) {
     const message = await this.prisma.chatMessage.findUnique({
       where: { id },
-    })
+    });
 
     if (!message) {
-      throw new NotFoundException('Pesan tidak ditemukan')
+      throw new NotFoundException('Pesan tidak ditemukan');
     }
 
     if (message.senderId !== userId || message.senderType !== userType) {
-      throw new ForbiddenException('Anda tidak memiliki hak untuk menghapus pesan ini')
+      throw new ForbiddenException(
+        'Anda tidak memiliki hak untuk menghapus pesan ini',
+      );
     }
 
     await this.prisma.chatMessage.delete({
       where: { id },
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   }
 
   async getContacts(userId: string, userType: string) {
@@ -99,37 +110,37 @@ export class ChatService {
           id: true,
           name: true,
         },
-      })
-      return stores.map(store => ({
+      });
+      return stores.map((store) => ({
         id: store.id,
         name: store.name,
         type: 'STORE',
-      }))
+      }));
     } else {
       // Store sees the Admin and other Stores under the same Admin
       const store = await this.prisma.store.findUnique({
         where: { id: userId },
         select: { adminId: true },
-      })
+      });
 
       if (!store) {
-        throw new NotFoundException('Store tidak ditemukan')
+        throw new NotFoundException('Store tidak ditemukan');
       }
 
-      const contacts: { id: string; name: string; type: string }[] = []
+      const contacts: { id: string; name: string; type: string }[] = [];
 
       // Get Admin contact
       const admin = await this.prisma.admin.findUnique({
         where: { id: store.adminId },
         select: { id: true, name: true },
-      })
+      });
 
       if (admin) {
         contacts.push({
           id: admin.id,
           name: `${admin.name} (Pusat)`,
           type: 'ADMIN',
-        })
+        });
       }
 
       // Get peer Stores under same Admin
@@ -139,17 +150,17 @@ export class ChatService {
           NOT: { id: userId },
         },
         select: { id: true, name: true },
-      })
+      });
 
-      siblingStores.forEach(s => {
+      siblingStores.forEach((s) => {
         contacts.push({
           id: s.id,
           name: s.name,
           type: 'STORE',
-        })
-      })
+        });
+      });
 
-      return contacts
+      return contacts;
     }
   }
 }

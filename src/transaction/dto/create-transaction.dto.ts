@@ -5,80 +5,80 @@ import {
   IsInt,
   IsOptional,
   IsString,
-} from 'class-validator'
+} from 'class-validator';
 
-import { PaymentMethod } from '@prisma/client'
+import { PaymentMethod } from '@prisma/client';
 
-import { TransactionItemDto } from './transaction-item.dto'
+import { TransactionItemDto } from './transaction-item.dto';
 
 export class CreateTransactionDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
-  cashierId!: string
-
-  @IsOptional()
-  @IsString()
-  customerId?: string
+  cashierId!: string;
 
   @IsOptional()
   @IsString()
-  customerName?: string
+  customerId?: string;
 
   @IsOptional()
   @IsString()
-  phone?: string
+  customerName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsOptional()
   @IsBoolean()
-  saveCustomer?: boolean
+  saveCustomer?: boolean;
 
   @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod
+  paymentMethod!: PaymentMethod;
 
   @IsInt()
-  paidAmount!: number
-
-  @IsOptional()
-  @IsInt()
-  subtotal?: number
+  paidAmount!: number;
 
   @IsOptional()
   @IsInt()
-  totalDiscount?: number
+  subtotal?: number;
 
   @IsOptional()
   @IsInt()
-  total?: number
+  totalDiscount?: number;
+
+  @IsOptional()
+  @IsInt()
+  total?: number;
 
   @IsOptional()
   @IsString()
-  orderType?: string
+  orderType?: string;
 
   @IsOptional()
   @IsString()
-  tableId?: string
+  tableId?: string;
 
   @IsOptional()
   @IsInt()
-  taxAmount?: number
+  taxAmount?: number;
 
   @IsOptional()
   @IsInt()
-  serviceAmount?: number
+  serviceAmount?: number;
 
   @IsOptional()
-  splitPayments?: any
-
-  @IsOptional()
-  @IsInt()
-  pointsEarned?: number
+  splitPayments?: any;
 
   @IsOptional()
   @IsInt()
-  pointsRedeemed?: number
+  pointsEarned?: number;
+
+  @IsOptional()
+  @IsInt()
+  pointsRedeemed?: number;
 
   @IsArray()
-  items!: TransactionItemDto[]
+  items!: TransactionItemDto[];
 }

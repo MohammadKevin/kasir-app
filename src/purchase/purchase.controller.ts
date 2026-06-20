@@ -1,30 +1,19 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-} from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 
-import { PurchaseService } from './purchase.service'
+import { PurchaseService } from './purchase.service';
 
-import { CreatePurchaseDto } from './dto/create-purchase.dto'
+import { CreatePurchaseDto } from './dto/create-purchase.dto';
 
 @Controller('purchases')
 export class PurchaseController {
-  constructor(
-    private readonly purchaseService: PurchaseService,
-  ) {}
+  constructor(private readonly purchaseService: PurchaseService) {}
 
   @Post()
   create(
     @Body()
     dto: CreatePurchaseDto,
   ) {
-    return this.purchaseService.create(
-      dto,
-    )
+    return this.purchaseService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -32,9 +21,7 @@ export class PurchaseController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.purchaseService.findAll(
-      storeId,
-    )
+    return this.purchaseService.findAll(storeId);
   }
 
   @Get(':id')
@@ -42,9 +29,7 @@ export class PurchaseController {
     @Param('id')
     id: string,
   ) {
-    return this.purchaseService.findOne(
-      id,
-    )
+    return this.purchaseService.findOne(id);
   }
 
   @Delete(':id')
@@ -52,8 +37,6 @@ export class PurchaseController {
     @Param('id')
     id: string,
   ) {
-    return this.purchaseService.remove(
-      id,
-    )
+    return this.purchaseService.remove(id);
   }
 }

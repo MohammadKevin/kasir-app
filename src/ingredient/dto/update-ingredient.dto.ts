@@ -1,15 +1,15 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateIngredientDto {
   @IsString()
   @IsOptional()
-  name?: string
+  name?: string;
 
   @IsNumber()
   @IsOptional()
-  stock?: number
+  stock?: number;
 
   @IsString()
   @IsOptional()
-  unit?: string
+  unit?: string;
 }

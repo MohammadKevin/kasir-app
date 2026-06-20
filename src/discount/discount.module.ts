@@ -1,23 +1,17 @@
-import { Module } from '@nestjs/common'
+import { Module } from '@nestjs/common';
 
-import { PrismaModule } from '../prisma/prisma.module'
+import { PrismaModule } from '../prisma/prisma.module';
 
-import { DiscountController } from './discount.controller'
-import { DiscountService } from './discount.service'
+import { DiscountController } from './discount.controller';
+import { DiscountService } from './discount.service';
 
 @Module({
   imports: [PrismaModule],
 
-  controllers: [
-    DiscountController,
-  ],
+  controllers: [DiscountController],
 
-  providers: [
-    DiscountService,
-  ],
+  providers: [DiscountService],
 
-  exports: [
-    DiscountService,
-  ],
+  exports: [DiscountService],
 })
 export class DiscountModule {}

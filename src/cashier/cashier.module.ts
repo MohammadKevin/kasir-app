@@ -1,22 +1,14 @@
-import { Module } from '@nestjs/common'
+import { Module } from '@nestjs/common';
 
-import { PrismaModule } from 'src/prisma/prisma.module'
+import { PrismaModule } from 'src/prisma/prisma.module';
 
-import { CashierController } from './cashier.controller'
-import { CashierService } from './cashier.service'
+import { CashierController } from './cashier.controller';
+import { CashierService } from './cashier.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-  ],
-  controllers: [
-    CashierController,
-  ],
-  providers: [
-    CashierService,
-  ],
-  exports: [
-    CashierService,
-  ],
+  imports: [PrismaModule],
+  controllers: [CashierController],
+  providers: [CashierService],
+  exports: [CashierService],
 })
-export class CashierModule { }
+export class CashierModule {}

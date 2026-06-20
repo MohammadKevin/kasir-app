@@ -3,19 +3,19 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import * as bcrypt from 'bcrypt'
-import * as nodemailer from 'nodemailer'
+import * as bcrypt from 'bcrypt';
+import * as nodemailer from 'nodemailer';
 
-import { JwtService } from '@nestjs/jwt'
-import { ConfigService } from '@nestjs/config'
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
-import { PrismaService } from 'src/prisma/prisma.service'
+import { PrismaService } from 'src/prisma/prisma.service';
 
-import { LoginDto } from './dto/login.dto'
-import { ForgotPasswordDto } from './dto/forgot-password.dto'
-import { ResetPasswordDto } from './dto/reset-password.dto'
+import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,38 +23,28 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-  ) { }
+  ) {}
 
-  async login(
-    dto: LoginDto,
-  ) {
-    const admin =
-      await this.prisma.admin.findUnique({
-        where: {
-          email:
-            dto.email,
-        },
+  async login(dto: LoginDto) {
+    const admin = await this.prisma.admin.findUnique({
+      where: {
+        email: dto.email,
+      },
 
-        include: {
-          stores: {
-            select: {
-              id: true,
-            },
+      include: {
+        stores: {
+          select: {
+            id: true,
           },
         },
-      })
+      },
+    });
 
     if (admin) {
-      const valid =
-        await bcrypt.compare(
-          dto.password,
-          admin.password,
-        )
+      const valid = await bcrypt.compare(dto.password, admin.password);
 
       if (!valid) {
-        throw new UnauthorizedException(
-          'Email atau password salah',
-        )
+        throw new UnauthorizedException('Email atau password salah');
       }
 
       // Check existing session (Bypassed to allow concurrent device usage)
@@ -76,61 +66,49 @@ export class AuthService {
       const accessToken = await this.jwt.signAsync({
         sub: admin.id,
         type: 'ADMIN',
-      })
+      });
 
       // Upsert current session
       await this.prisma.session.upsert({
         where: { userId_userType: { userId: admin.id, userType: 'ADMIN' } },
         update: { token: accessToken, lastActive: new Date() },
-        create: { userId: admin.id, userType: 'ADMIN', token: accessToken, lastActive: new Date() }
-      })
+        create: {
+          userId: admin.id,
+          userType: 'ADMIN',
+          token: accessToken,
+          lastActive: new Date(),
+        },
+      });
 
       return {
         accessToken,
 
         user: {
-          id:
-            admin.id,
+          id: admin.id,
 
-          name:
-            admin.name,
+          name: admin.name,
 
-          type:
-            'ADMIN',
+          type: 'ADMIN',
 
-          storeId:
-            admin
-              .stores?.[0]
-              ?.id ??
-            null,
+          storeId: admin.stores?.[0]?.id ?? null,
         },
-      }
+      };
     }
 
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          email:
-            dto.email,
-        },
-      })
+    const store = await this.prisma.store.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
 
     if (!store) {
-      throw new UnauthorizedException(
-        'Email atau password salah',
-      )
+      throw new UnauthorizedException('Email atau password salah');
     }
 
-    const valid =
-      await bcrypt.compare(
-        dto.password,
-        store.password,
-      )
+    const valid = await bcrypt.compare(dto.password, store.password);
 
     if (!valid) {
-      throw new UnauthorizedException(
-        'Email atau password salah',
-      )
+      throw new UnauthorizedException('Email atau password salah');
     }
 
     // Check existing session (Bypassed to allow concurrent device usage)
@@ -152,32 +130,33 @@ export class AuthService {
     const accessToken = await this.jwt.signAsync({
       sub: store.id,
       type: 'STORE',
-    })
+    });
 
     // Upsert current session
     await this.prisma.session.upsert({
       where: { userId_userType: { userId: store.id, userType: 'STORE' } },
       update: { token: accessToken, lastActive: new Date() },
-      create: { userId: store.id, userType: 'STORE', token: accessToken, lastActive: new Date() }
-    })
+      create: {
+        userId: store.id,
+        userType: 'STORE',
+        token: accessToken,
+        lastActive: new Date(),
+      },
+    });
 
     return {
       accessToken,
 
       user: {
-        id:
-          store.id,
+        id: store.id,
 
-        name:
-          store.name,
+        name: store.name,
 
-        type:
-          'STORE',
+        type: 'STORE',
 
-        storeId:
-          store.id,
+        storeId: store.id,
       },
-    }
+    };
   }
 
   async logout(userId: string, userType: string) {
@@ -186,10 +165,9 @@ export class AuthService {
         userId,
         userType,
       },
-    })
-    return { success: true }
+    });
+    return { success: true };
   }
-
 
   async forgotPassword(dto: ForgotPasswordDto) {
     let userType: 'ADMIN' | 'STORE' | null = null;
@@ -230,7 +208,8 @@ export class AuthService {
       },
     );
 
-    const frontendUrl = this.config.get('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get('FRONTEND_URL') || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     const smtpHost = this.config.get('SMTP_HOST');
@@ -296,11 +275,15 @@ export class AuthService {
     try {
       payload = await this.jwt.verifyAsync(dto.token);
     } catch (err) {
-      throw new BadRequestException('Token reset password tidak valid atau sudah kedaluwarsa');
+      throw new BadRequestException(
+        'Token reset password tidak valid atau sudah kedaluwarsa',
+      );
     }
 
     if (payload.action !== 'RESET_PASSWORD') {
-      throw new BadRequestException('Token tidak valid untuk pengaturan ulang password');
+      throw new BadRequestException(
+        'Token tidak valid untuk pengaturan ulang password',
+      );
     }
 
     const userId = payload.sub;

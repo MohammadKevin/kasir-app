@@ -2,21 +2,16 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import {
-  Prisma,
-  TransactionStatus,
-} from '@prisma/client'
+import { Prisma, TransactionStatus } from '@prisma/client';
 
-import { PrismaService } from '../prisma/prisma.service'
-import { CreateTransactionDto } from './dto/create-transaction.dto'
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
 
 @Injectable()
 export class TransactionService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private generateInvoiceNumber(storeId: string): string {
     const storeCode = storeId.slice(0, 4).toUpperCase();
@@ -30,15 +25,23 @@ export class TransactionService {
       const store = await tx.store.findUnique({ where: { id: dto.storeId } });
       if (!store) throw new NotFoundException('Store  tidak ditemukan');
 
-      const cashier = await tx.user.findUnique({ where: { id: dto.cashierId } });
+      const cashier = await tx.user.findUnique({
+        where: { id: dto.cashierId },
+      });
       if (!cashier) throw new NotFoundException('Cashier tidak ditemukan');
 
       let customerId = dto.customerId ?? null;
       if (!customerId && dto.phone) {
-        let customer = await tx.customer.findFirst({ where: { storeId: dto.storeId, phone: dto.phone } });
+        let customer = await tx.customer.findFirst({
+          where: { storeId: dto.storeId, phone: dto.phone },
+        });
         if (!customer && dto.saveCustomer) {
-          customer = await tx.customer.create({ 
-            data: { storeId: dto.storeId, name: dto.customerName ?? 'Customer', phone: dto.phone } 
+          customer = await tx.customer.create({
+            data: {
+              storeId: dto.storeId,
+              name: dto.customerName ?? 'Customer',
+              phone: dto.phone,
+            },
           });
         }
         customerId = customer?.id ?? null;
@@ -49,46 +52,58 @@ export class TransactionService {
       let totalDiscount = 0;
 
       for (const item of dto.items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
         if (!product || product.stock < item.quantity) {
-          throw new BadRequestException(`Produk ${product?.name || item.productId} tidak tersedia`);
+          throw new BadRequestException(
+            `Produk ${product?.name || item.productId} tidak tersedia`,
+          );
         }
 
         // Deduct ingredient stock based on product recipe (BOM)
         const recipe = await tx.productIngredient.findMany({
           where: { productId: product.id },
-          include: { ingredient: true }
+          include: { ingredient: true },
         });
 
         for (const recipeItem of recipe) {
           const requiredQty = recipeItem.quantity * item.quantity;
           if (recipeItem.ingredient.stock < requiredQty) {
             throw new BadRequestException(
-              `Bahan baku ${recipeItem.ingredient.name} tidak cukup untuk membuat ${product.name}`
+              `Bahan baku ${recipeItem.ingredient.name} tidak cukup untuk membuat ${product.name}`,
             );
           }
           await tx.ingredient.update({
             where: { id: recipeItem.ingredientId },
-            data: { stock: { decrement: requiredQty } }
+            data: { stock: { decrement: requiredQty } },
           });
         }
 
         const activeDiscount = await tx.discountProduct.findFirst({
-            where: { productId: product.id, discount: { is: { isActive: true } } },
-            include: { discount: true }
+          where: {
+            productId: product.id,
+            discount: { is: { isActive: true } },
+          },
+          include: { discount: true },
         });
 
         let masterDiscount = 0;
         if (activeDiscount?.discount) {
-            masterDiscount = activeDiscount.discount.type === 'PERCENTAGE' 
-                ? Math.floor((product.sellingPrice * activeDiscount.discount.value) / 100) 
-                : activeDiscount.discount.value;
+          masterDiscount =
+            activeDiscount.discount.type === 'PERCENTAGE'
+              ? Math.floor(
+                  (product.sellingPrice * activeDiscount.discount.value) / 100,
+                )
+              : activeDiscount.discount.value;
         }
 
         const cashierDiscount = Math.floor(item.cashierDiscount ?? 0);
-        const finalPrice = product.sellingPrice - masterDiscount - cashierDiscount;
-        
-        if (finalPrice < 0) throw new BadRequestException(`${product.name} harga tidak valid`);
+        const finalPrice =
+          product.sellingPrice - masterDiscount - cashierDiscount;
+
+        if (finalPrice < 0)
+          throw new BadRequestException(`${product.name} harga tidak valid`);
 
         subtotal += product.sellingPrice * item.quantity;
         totalDiscount += (masterDiscount + cashierDiscount) * item.quantity;
@@ -105,48 +120,68 @@ export class TransactionService {
 
         const updatedProduct = await tx.product.update({
           where: { id: product.id },
-          data: { stock: { decrement: item.quantity } }
+          data: { stock: { decrement: item.quantity } },
         });
 
-        if (updatedProduct.isActive && updatedProduct.stock <= updatedProduct.minimumStock) {
-          await tx.notification.create({
-            data: {
-              userId: dto.storeId,
-              userType: 'STORE',
-              title: 'Stok Menipis',
-              content: `Stok produk ${product.name} saat ini tinggal ${updatedProduct.stock} (batas minimum: ${product.minimumStock})`,
-              isRead: false
-            }
-          }).catch(err => {
-            console.warn('Gagal membuat notifikasi stok menipis:', err.message)
-          })
+        if (
+          updatedProduct.isActive &&
+          updatedProduct.stock <= updatedProduct.minimumStock
+        ) {
+          await tx.notification
+            .create({
+              data: {
+                userId: dto.storeId,
+                userType: 'STORE',
+                title: 'Stok Menipis',
+                content: `Stok produk ${product.name} saat ini tinggal ${updatedProduct.stock} (batas minimum: ${product.minimumStock})`,
+                isRead: false,
+              },
+            })
+            .catch((err) => {
+              console.warn(
+                'Gagal membuat notifikasi stok menipis:',
+                err.message,
+              );
+            });
         }
       }
-      const finalSubtotal = dto.subtotal !== undefined ? dto.subtotal : subtotal;
-      const finalTotalDiscount = dto.totalDiscount !== undefined ? dto.totalDiscount : totalDiscount;
-      const finalTotal = dto.total !== undefined ? dto.total : (finalSubtotal - finalTotalDiscount);
-      const changeAmount = (dto.paymentMethod === 'CASH' || dto.paymentMethod === 'SPLIT') ? Math.max(0, dto.paidAmount - finalTotal) : 0;
+      const finalSubtotal =
+        dto.subtotal !== undefined ? dto.subtotal : subtotal;
+      const finalTotalDiscount =
+        dto.totalDiscount !== undefined ? dto.totalDiscount : totalDiscount;
+      const finalTotal =
+        dto.total !== undefined
+          ? dto.total
+          : finalSubtotal - finalTotalDiscount;
+      const changeAmount =
+        dto.paymentMethod === 'CASH' || dto.paymentMethod === 'SPLIT'
+          ? Math.max(0, dto.paidAmount - finalTotal)
+          : 0;
 
       // Process Customer Loyalty Points
       let pointsEarned = 0;
       let pointsRedeemed = dto.pointsRedeemed ?? 0;
       if (customerId && store.pointsEnabled) {
         if (pointsRedeemed > 0) {
-          const customer = await tx.customer.findUnique({ where: { id: customerId } });
+          const customer = await tx.customer.findUnique({
+            where: { id: customerId },
+          });
           if (!customer || customer.points < pointsRedeemed) {
-            throw new BadRequestException('Poin member tidak mencukupi untuk redeem');
+            throw new BadRequestException(
+              'Poin member tidak mencukupi untuk redeem',
+            );
           }
           await tx.customer.update({
             where: { id: customerId },
-            data: { points: { decrement: pointsRedeemed } }
+            data: { points: { decrement: pointsRedeemed } },
           });
         }
-        
+
         // Earn 1 point per 10,000 IDR total spent
         pointsEarned = dto.pointsEarned ?? Math.floor(finalTotal / 10000);
         const updatedCust = await tx.customer.update({
           where: { id: customerId },
-          data: { points: { increment: pointsEarned } }
+          data: { points: { increment: pointsEarned } },
         });
 
         // Update member tier based on points
@@ -156,7 +191,7 @@ export class TransactionService {
 
         await tx.customer.update({
           where: { id: customerId },
-          data: { memberTier: newTier }
+          data: { memberTier: newTier },
         });
       } else {
         pointsEarned = 0;
@@ -167,7 +202,7 @@ export class TransactionService {
       if (dto.orderType === 'DINEIN' && dto.tableId) {
         await tx.table.update({
           where: { id: dto.tableId },
-          data: { status: 'AVAILABLE' }
+          data: { status: 'AVAILABLE' },
         });
       }
 
@@ -190,99 +225,75 @@ export class TransactionService {
           splitPayments: dto.splitPayments ?? null,
           pointsEarned,
           pointsRedeemed,
-          items: { createMany: { data: itemsData } }
-        }
+          items: { createMany: { data: itemsData } },
+        },
       });
     });
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.transaction.findMany({
       where: {
         storeId,
       },
 
       include: {
-        cashier:
-          true,
+        cashier: true,
 
-        customer:
-          true,
+        customer: true,
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const transaction =
-      await this.prisma.transaction.findUnique({
-        where: {
-          id,
-        },
+  async findOne(id: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: {
+        id,
+      },
 
-        include: {
-          cashier:
-            true,
+      include: {
+        cashier: true,
 
-          customer:
-            true,
+        customer: true,
 
-          items: {
-            include: {
-              product:
-                true,
-            },
+        items: {
+          include: {
+            product: true,
           },
         },
-      })
+      },
+    });
 
     if (!transaction) {
-      throw new NotFoundException(
-        'Transaksi tidak ditemukan',
-      )
+      throw new NotFoundException('Transaksi tidak ditemukan');
     }
 
-    return transaction
+    return transaction;
   }
 
-  async void(
-    id: string,
-    reason: string,
-  ) {
-    const transaction =
-      await this.findOne(id)
+  async void(id: string, reason: string) {
+    const transaction = await this.findOne(id);
 
-    if (
-      transaction.status ===
-      TransactionStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        'Transaksi sudah dibatalkan',
-      )
+    if (transaction.status === TransactionStatus.CANCELLED) {
+      throw new BadRequestException('Transaksi sudah dibatalkan');
     }
 
     for (const item of transaction.items) {
       await this.prisma.product.update({
         where: {
-          id:
-            item.productId,
+          id: item.productId,
         },
 
         data: {
           stock: {
-            increment:
-              item.quantity,
+            increment: item.quantity,
           },
         },
-      })
+      });
     }
 
     return this.prisma.transaction.update({
@@ -291,126 +302,88 @@ export class TransactionService {
       },
 
       data: {
-        status:
-          TransactionStatus.CANCELLED,
+        status: TransactionStatus.CANCELLED,
 
-        voidReason:
-          reason,
+        voidReason: reason,
       },
-    })
+    });
   }
 
-  async receipt(
-    id: string,
-  ) {
-    const trx =
-      await this.prisma.transaction.findUnique({
-        where: {
-          id,
-        },
+  async receipt(id: string) {
+    const trx = await this.prisma.transaction.findUnique({
+      where: {
+        id,
+      },
 
-        include: {
-          cashier: true,
+      include: {
+        cashier: true,
 
-          customer: true,
+        customer: true,
 
-          store: true,
-          
-          table: true,
+        store: true,
 
-          items: {
-            include: {
-              product: true,
-            },
+        table: true,
+
+        items: {
+          include: {
+            product: true,
           },
         },
-      })
+      },
+    });
 
     if (!trx) {
-      throw new NotFoundException(
-        'Transaksi tidak ditemukan',
-      )
+      throw new NotFoundException('Transaksi tidak ditemukan');
     }
 
     return {
-      store:
-        trx.store.name,
+      store: trx.store.name,
 
-      invoice:
-        trx.invoiceNumber,
+      invoice: trx.invoiceNumber,
 
-      cashier:
-        trx.cashier.name,
+      cashier: trx.cashier.name,
 
-      customer:
-        trx.customer?.name ??
-        '-',
+      customer: trx.customer?.name ?? '-',
 
-      items:
-        trx.items.map(
-          (
-            item,
-          ) => ({
-            product:
-              item.product
-                .name,
+      items: trx.items.map((item) => ({
+        product: item.product.name,
 
-            quantity:
-              item.quantity,
+        quantity: item.quantity,
 
-            originalPrice:
-              item.originalPrice,
+        originalPrice: item.originalPrice,
 
-            discount:
-              item.masterDiscount +
-              item.cashierDiscount,
+        discount: item.masterDiscount + item.cashierDiscount,
 
-            price:
-              item.finalPrice,
+        price: item.finalPrice,
 
-            subtotal:
-              item.subtotal,
-          }),
-        ),
+        subtotal: item.subtotal,
+      })),
 
-      subtotal:
-        trx.subtotal,
+      subtotal: trx.subtotal,
 
-      discount:
-        trx.totalDiscount,
+      discount: trx.totalDiscount,
 
-      total:
-        trx.total,
+      total: trx.total,
 
-      paidAmount:
-        trx.paidAmount,
+      paidAmount: trx.paidAmount,
 
-      changeAmount:
-        trx.changeAmount,
-      
-      orderType:
-        trx.orderType,
-        
-      tableNumber:
-        trx.table?.number ?? null,
-        
-      taxAmount:
-        trx.taxAmount,
-        
-      serviceAmount:
-        trx.serviceAmount,
-        
-      splitPayments:
-        trx.splitPayments,
-        
-      pointsEarned:
-        trx.pointsEarned,
-        
-      pointsRedeemed:
-        trx.pointsRedeemed,
+      changeAmount: trx.changeAmount,
 
-      createdAt:
-        trx.createdAt,
-    }
+      orderType: trx.orderType,
+
+      tableNumber: trx.table?.number ?? null,
+
+      taxAmount: trx.taxAmount,
+
+      serviceAmount: trx.serviceAmount,
+
+      splitPayments: trx.splitPayments,
+
+      pointsEarned: trx.pointsEarned,
+
+      pointsRedeemed: trx.pointsRedeemed,
+
+      createdAt: trx.createdAt,
+    };
   }
 }

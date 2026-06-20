@@ -3,90 +3,67 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import * as bcrypt from 'bcrypt'
+import * as bcrypt from 'bcrypt';
 
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
-import { CreateCashierDto } from './dto/create-cashier.dto'
-import { UpdateCashierDto } from './dto/update-cashier.dto'
-import { LoginPinDto } from './dto/login-pin.dto'
-import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto'
+import { CreateCashierDto } from './dto/create-cashier.dto';
+import { UpdateCashierDto } from './dto/update-cashier.dto';
+import { LoginPinDto } from './dto/login-pin.dto';
+import { VerifyAdminPinDto } from './dto/verify-admin-pin.dto';
 
 @Injectable()
 export class CashierService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    adminId: string,
-    dto: CreateCashierDto,
-  ) {
-    const store =
-      await this.prisma.store.findFirst({
-        where: {
-          id: dto.storeId,
-          adminId,
-        },
-      })
+  async create(adminId: string, dto: CreateCashierDto) {
+    const store = await this.prisma.store.findFirst({
+      where: {
+        id: dto.storeId,
+        adminId,
+      },
+    });
 
     if (!store) {
-      throw new UnauthorizedException(
-        'Store tidak ditemukan',
-      )
+      throw new UnauthorizedException('Store tidak ditemukan');
     }
 
-    const exist =
-      await this.prisma.user.findFirst({
-        where: {
-          storeId:
-            dto.storeId,
+    const exist = await this.prisma.user.findFirst({
+      where: {
+        storeId: dto.storeId,
 
-          OR: [
-            {
-              name:
-                dto.name,
-            },
-            {
-              phone:
-                dto.phone,
-            },
-          ],
-        },
-      })
+        OR: [
+          {
+            name: dto.name,
+          },
+          {
+            phone: dto.phone,
+          },
+        ],
+      },
+    });
 
     if (exist) {
-      throw new ConflictException(
-        'Cashier sudah ada',
-      )
+      throw new ConflictException('Cashier sudah ada');
     }
 
     return this.prisma.user.create({
       data: {
         adminId,
 
-        storeId:
-          dto.storeId,
+        storeId: dto.storeId,
 
-        name:
-          dto.name,
+        name: dto.name,
 
-        phone:
-          dto.phone,
+        phone: dto.phone,
 
-        pin:
-          await bcrypt.hash(
-            dto.pin,
-            10,
-          ),
+        pin: await bcrypt.hash(dto.pin, 10),
 
-        isActive:
-          true,
+        isActive: true,
 
-        isStoreAdmin:
-          dto.isStoreAdmin ?? false,
+        isStoreAdmin: dto.isStoreAdmin ?? false,
       },
 
       select: {
@@ -98,12 +75,10 @@ export class CashierService {
         isStoreAdmin: true,
         createdAt: true,
       },
-    })
+    });
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.user.findMany({
       where: {
         storeId,
@@ -120,72 +95,45 @@ export class CashierService {
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const cashier =
-      await this.prisma.user.findFirst({
-        where: {
-          id,
-          deletedAt: null,
-        },
-      })
+  async findOne(id: string) {
+    const cashier = await this.prisma.user.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
 
     if (!cashier) {
-      throw new NotFoundException(
-        'Cashier tidak ditemukan',
-      )
+      throw new NotFoundException('Cashier tidak ditemukan');
     }
 
-    return cashier
+    return cashier;
   }
 
-  async update(
-    id: string,
-    dto: UpdateCashierDto,
-  ) {
-    await this.findOne(id)
+  async update(id: string, dto: UpdateCashierDto) {
+    await this.findOne(id);
 
-    const data: any = {}
+    const data: any = {};
 
-    if (dto.name)
-      data.name =
-        dto.name
+    if (dto.name) data.name = dto.name;
 
-    if (dto.phone)
-      data.phone =
-        dto.phone
+    if (dto.phone) data.phone = dto.phone;
 
-    if (
-      dto.isActive !==
-      undefined
-    ) {
-      data.isActive =
-        dto.isActive
+    if (dto.isActive !== undefined) {
+      data.isActive = dto.isActive;
     }
 
-    if (
-      dto.isStoreAdmin !==
-      undefined
-    ) {
-      data.isStoreAdmin =
-        dto.isStoreAdmin
+    if (dto.isStoreAdmin !== undefined) {
+      data.isStoreAdmin = dto.isStoreAdmin;
     }
 
-    if (
-      dto.pin
-    ) {
-      data.pin =
-        await bcrypt.hash(
-          dto.pin,
-          10,
-        )
+    if (dto.pin) {
+      data.pin = await bcrypt.hash(dto.pin, 10);
     }
 
     return this.prisma.user.update({
@@ -194,15 +142,11 @@ export class CashierService {
       },
 
       data,
-    })
+    });
   }
 
-  async remove(
-    id: string,
-  ) {
-    await this.findOne(
-      id,
-    )
+  async remove(id: string) {
+    await this.findOne(id);
 
     await this.prisma.user.update({
       where: {
@@ -213,60 +157,40 @@ export class CashierService {
         isActive: false,
         pin: `deleted-${id}-${Date.now()}`,
       },
-    })
+    });
 
     return {
-      message:
-        'Cashier berhasil dihapus',
-    }
+      message: 'Cashier berhasil dihapus',
+    };
   }
 
-  async loginPin(
-    dto: LoginPinDto,
-  ) {
-    const cashier =
-      await this.prisma.user.findFirst({
-        where: {
-          id: dto.cashierId,
-          deletedAt: null,
-        },
-      })
+  async loginPin(dto: LoginPinDto) {
+    const cashier = await this.prisma.user.findFirst({
+      where: {
+        id: dto.cashierId,
+        deletedAt: null,
+      },
+    });
 
-    if (
-      !cashier
-    ) {
-      throw new UnauthorizedException(
-        'Cashier tidak ditemukan',
-      )
+    if (!cashier) {
+      throw new UnauthorizedException('Cashier tidak ditemukan');
     }
 
-    if (
-      !cashier.isActive
-    ) {
-      throw new UnauthorizedException(
-        'Cashier nonaktif',
-      )
+    if (!cashier.isActive) {
+      throw new UnauthorizedException('Cashier nonaktif');
     }
 
-    const valid =
-      await bcrypt.compare(
-        dto.pin,
-        cashier.pin,
-      )
+    const valid = await bcrypt.compare(dto.pin, cashier.pin);
 
-    if (
-      !valid
-    ) {
-      throw new UnauthorizedException(
-        'PIN salah',
-      )
+    if (!valid) {
+      throw new UnauthorizedException('PIN salah');
     }
 
     // Auto Clock-In or Reopen today's attendance
-    const startOfDay = new Date()
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date()
-    endOfDay.setHours(23, 59, 59, 999)
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
     const existingToday = await this.prisma.attendance.findFirst({
       where: {
@@ -276,7 +200,7 @@ export class CashierService {
           lte: endOfDay,
         },
       },
-    })
+    });
 
     if (existingToday) {
       if (existingToday.clockOut !== null) {
@@ -285,7 +209,7 @@ export class CashierService {
           data: {
             clockOut: null,
           },
-        })
+        });
       }
     } else {
       await this.prisma.attendance.create({
@@ -293,100 +217,73 @@ export class CashierService {
           userId: cashier.id,
           clockIn: new Date(),
         },
-      })
+      });
     }
 
     return {
-      success:
-        true,
+      success: true,
 
-      message:
-        'Kasir aktif',
+      message: 'Kasir aktif',
 
-      transactionAllowed:
-        true,
+      transactionAllowed: true,
 
       session: {
-        active:
-          true,
+        active: true,
 
-        startedAt:
-          new Date(),
+        startedAt: new Date(),
       },
 
       cashier: {
-        id:
-          cashier.id,
+        id: cashier.id,
 
-        name:
-          cashier.name,
+        name: cashier.name,
 
-        phone:
-          cashier.phone,
+        phone: cashier.phone,
 
-        storeId:
-          cashier.storeId,
+        storeId: cashier.storeId,
 
-        isStoreAdmin:
-          cashier.isStoreAdmin,
+        isStoreAdmin: cashier.isStoreAdmin,
       },
-    }
+    };
   }
 
-  async verifyAdminPin(
-    dto: VerifyAdminPinDto,
-  ) {
-    const cashiers =
-      await this.prisma.user.findMany({
-        where: {
-          storeId:
-            dto.storeId,
+  async verifyAdminPin(dto: VerifyAdminPinDto) {
+    const cashiers = await this.prisma.user.findMany({
+      where: {
+        storeId: dto.storeId,
 
-          isStoreAdmin:
-            true,
+        isStoreAdmin: true,
 
-          deletedAt:
-            null,
+        deletedAt: null,
 
-          isActive:
-            true,
-        },
-      })
+        isActive: true,
+      },
+    });
 
     for (const cashier of cashiers) {
-      const valid =
-        await bcrypt.compare(
-          dto.pin,
-          cashier.pin,
-        )
+      const valid = await bcrypt.compare(dto.pin, cashier.pin);
 
       if (valid) {
         return {
-          success:
-            true,
+          success: true,
 
           cashier: {
-            id:
-              cashier.id,
+            id: cashier.id,
 
-            name:
-              cashier.name,
+            name: cashier.name,
 
-            phone:
-              cashier.phone,
+            phone: cashier.phone,
 
-            storeId:
-              cashier.storeId,
+            storeId: cashier.storeId,
 
-            isStoreAdmin:
-              cashier.isStoreAdmin,
+            isStoreAdmin: cashier.isStoreAdmin,
           },
-        }
+        };
       }
     }
 
     throw new UnauthorizedException(
       'PIN Admin Store tidak valid atau tidak memiliki hak akses!',
-    )
+    );
   }
 }

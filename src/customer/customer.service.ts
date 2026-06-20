@@ -2,48 +2,38 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
-import { CreateCustomerDto } from './dto/create-customer.dto'
-import { UpdateCustomerDto } from './dto/update-customer.dto'
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Injectable()
 export class CustomerService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    dto: CreateCustomerDto,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id: dto.storeId,
-        },
-      })
+  async create(dto: CreateCustomerDto) {
+    const store = await this.prisma.store.findUnique({
+      where: {
+        id: dto.storeId,
+      },
+    });
 
     if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
+      throw new NotFoundException('Store tidak ditemukan');
     }
 
     if (dto.phone) {
-      const exist =
-        await this.prisma.customer.findFirst({
-          where: {
-            storeId: dto.storeId,
-            phone: dto.phone,
-          },
-        })
+      const exist = await this.prisma.customer.findFirst({
+        where: {
+          storeId: dto.storeId,
+          phone: dto.phone,
+        },
+      });
 
       if (exist) {
-        throw new ConflictException(
-          'Nomor HP sudah terdaftar',
-        )
+        throw new ConflictException('Nomor HP sudah terdaftar');
       }
     }
 
@@ -53,12 +43,10 @@ export class CustomerService {
         name: dto.name,
         phone: dto.phone,
       },
-    })
+    });
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.customer.findMany({
       where: {
         storeId,
@@ -71,37 +59,29 @@ export class CustomerService {
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const customer =
-      await this.prisma.customer.findUnique({
-        where: {
-          id,
-        },
+  async findOne(id: string) {
+    const customer = await this.prisma.customer.findUnique({
+      where: {
+        id,
+      },
 
-        include: {
-          transactions: true,
-        },
-      })
+      include: {
+        transactions: true,
+      },
+    });
 
     if (!customer) {
-      throw new NotFoundException(
-        'Customer tidak ditemukan',
-      )
+      throw new NotFoundException('Customer tidak ditemukan');
     }
 
-    return customer
+    return customer;
   }
 
-  async update(
-    id: string,
-    dto: UpdateCustomerDto,
-  ) {
-    await this.findOne(id)
+  async update(id: string, dto: UpdateCustomerDto) {
+    await this.findOne(id);
 
     return this.prisma.customer.update({
       where: {
@@ -109,29 +89,24 @@ export class CustomerService {
       },
 
       data: dto,
-    })
+    });
   }
 
-  async remove(
-    id: string,
-  ) {
-    await this.findOne(id)
+  async remove(id: string) {
+    await this.findOne(id);
 
     await this.prisma.customer.delete({
       where: {
         id,
       },
-    })
+    });
 
     return {
-      message:
-        'Customer berhasil dihapus',
-    }
+      message: 'Customer berhasil dihapus',
+    };
   }
 
-  async findByPhone(
-    phone: string,
-  ) {
+  async findByPhone(phone: string) {
     return this.prisma.customer.findFirst({
       where: {
         phone,
@@ -140,6 +115,6 @@ export class CustomerService {
       include: {
         transactions: true,
       },
-    })
+    });
   }
 }

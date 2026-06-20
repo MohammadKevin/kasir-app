@@ -1,26 +1,21 @@
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  Length,
-} from 'class-validator'
+import { IsBoolean, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateCashierDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
-  name!: string
+  name!: string;
 
   @IsOptional()
   @IsString()
-  phone?: string
+  phone?: string;
 
   @IsString()
   @Length(4, 6)
-  pin!: string
+  pin!: string;
 
   @IsOptional()
   @IsBoolean()
-  isStoreAdmin?: boolean
+  isStoreAdmin?: boolean;
 }

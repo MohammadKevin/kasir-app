@@ -1,13 +1,10 @@
-import {
-  IsString,
-  Length,
-} from 'class-validator'
+import { IsString, Length } from 'class-validator';
 
 export class VerifyAdminPinDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
   @Length(4, 6)
-  pin!: string
+  pin!: string;
 }

@@ -7,30 +7,25 @@ import {
   Post,
   Req,
   UseGuards,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
-import { TransactionService } from './transaction.service'
-import { CreateTransactionDto } from './dto/create-transaction.dto'
-import { VoidTransactionDto } from './dto/void-transaction.dto'
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { TransactionService } from './transaction.service';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { VoidTransactionDto } from './dto/void-transaction.dto';
 
 @Controller('transactions')
 @UseGuards(JwtAuthGuard)
 export class TransactionController {
-  constructor(
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   @Post()
-  create(
-    @Req() req: any,
-    @Body() dto: CreateTransactionDto,
-  ) {
+  create(@Req() req: any, @Body() dto: CreateTransactionDto) {
     return this.transactionService.create({
       ...dto,
       cashierId: dto.cashierId || req.user?.id,
       storeId: dto.storeId || req.user?.storeId || req.body?.storeId,
-    })
+    });
   }
 
   @Get('store/:storeId')
@@ -38,9 +33,7 @@ export class TransactionController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.transactionService.findAll(
-      storeId,
-    )
+    return this.transactionService.findAll(storeId);
   }
 
   @Get(':id')
@@ -48,9 +41,7 @@ export class TransactionController {
     @Param('id')
     id: string,
   ) {
-    return this.transactionService.findOne(
-      id,
-    )
+    return this.transactionService.findOne(id);
   }
 
   @Patch(':id/void')
@@ -61,10 +52,7 @@ export class TransactionController {
     @Body()
     dto: VoidTransactionDto,
   ) {
-    return this.transactionService.void(
-      id,
-      dto.reason,
-    )
+    return this.transactionService.void(id, dto.reason);
   }
 
   @Get(':id/receipt')
@@ -72,8 +60,6 @@ export class TransactionController {
     @Param('id')
     id: string,
   ) {
-    return this.transactionService.receipt(
-      id,
-    )
+    return this.transactionService.receipt(id);
   }
 }

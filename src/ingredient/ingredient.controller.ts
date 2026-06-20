@@ -7,12 +7,12 @@ import {
   Patch,
   Post,
   UseGuards,
-} from '@nestjs/common'
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard'
-import { IngredientService } from './ingredient.service'
-import { CreateIngredientDto } from './dto/create-ingredient.dto'
-import { UpdateIngredientDto } from './dto/update-ingredient.dto'
-import { UpdateRecipeDto } from './dto/update-recipe.dto'
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { IngredientService } from './ingredient.service';
+import { CreateIngredientDto } from './dto/create-ingredient.dto';
+import { UpdateIngredientDto } from './dto/update-ingredient.dto';
+import { UpdateRecipeDto } from './dto/update-recipe.dto';
 
 @Controller('ingredients')
 @UseGuards(JwtAuthGuard)
@@ -21,35 +21,32 @@ export class IngredientController {
 
   @Post()
   create(@Body() dto: CreateIngredientDto) {
-    return this.ingredientService.create(dto)
+    return this.ingredientService.create(dto);
   }
 
   @Get('store/:storeId')
   findAll(@Param('storeId') storeId: string) {
-    return this.ingredientService.findAll(storeId)
+    return this.ingredientService.findAll(storeId);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.ingredientService.findOne(id)
+    return this.ingredientService.findOne(id);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateIngredientDto,
-  ) {
-    return this.ingredientService.update(id, dto)
+  update(@Param('id') id: string, @Body() dto: UpdateIngredientDto) {
+    return this.ingredientService.update(id, dto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.ingredientService.remove(id)
+    return this.ingredientService.remove(id);
   }
 
   @Get('recipe/:productId')
   getRecipe(@Param('productId') productId: string) {
-    return this.ingredientService.getRecipe(productId)
+    return this.ingredientService.getRecipe(productId);
   }
 
   @Post('recipe/:productId')
@@ -57,6 +54,6 @@ export class IngredientController {
     @Param('productId') productId: string,
     @Body() dto: UpdateRecipeDto,
   ) {
-    return this.ingredientService.updateRecipe(productId, dto)
+    return this.ingredientService.updateRecipe(productId, dto);
   }
 }

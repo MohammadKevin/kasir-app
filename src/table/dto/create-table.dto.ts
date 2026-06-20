@@ -1,15 +1,15 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateTableDto {
   @IsString()
   @IsNotEmpty()
-  storeId: string
+  storeId: string;
 
   @IsString()
   @IsNotEmpty()
-  number: string
+  number: string;
 
   @IsNumber()
   @IsOptional()
-  capacity?: number
+  capacity?: number;
 }

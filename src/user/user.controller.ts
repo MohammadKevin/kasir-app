@@ -1,25 +1,16 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-} from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch } from '@nestjs/common';
 
-import { UserService } from './user.service'
+import { UserService } from './user.service';
 
-import { UpdateUserDto } from './dto/update-user.dto'
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @Get()
   findAll() {
-    return this.userService.findAll()
+    return this.userService.findAll();
   }
 
   @Get(':id')
@@ -27,7 +18,7 @@ export class UserController {
     @Param('id')
     id: string,
   ) {
-    return this.userService.findOne(id)
+    return this.userService.findOne(id);
   }
 
   @Patch(':id')
@@ -38,10 +29,7 @@ export class UserController {
     @Body()
     dto: UpdateUserDto,
   ) {
-    return this.userService.update(
-      id,
-      dto,
-    )
+    return this.userService.update(id, dto);
   }
 
   @Delete(':id')
@@ -49,6 +37,6 @@ export class UserController {
     @Param('id')
     id: string,
   ) {
-    return this.userService.remove(id)
+    return this.userService.remove(id);
   }
 }

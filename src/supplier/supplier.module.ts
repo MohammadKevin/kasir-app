@@ -1,25 +1,17 @@
-import { Module } from '@nestjs/common'
+import { Module } from '@nestjs/common';
 
-import { PrismaModule } from '../prisma/prisma.module'
+import { PrismaModule } from '../prisma/prisma.module';
 
-import { SupplierController } from './supplier.controller'
-import { SupplierService } from './supplier.service'
+import { SupplierController } from './supplier.controller';
+import { SupplierService } from './supplier.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-  ],
+  imports: [PrismaModule],
 
-  controllers: [
-    SupplierController,
-  ],
+  controllers: [SupplierController],
 
-  providers: [
-    SupplierService,
-  ],
+  providers: [SupplierService],
 
-  exports: [
-    SupplierService,
-  ],
+  exports: [SupplierService],
 })
 export class SupplierModule {}

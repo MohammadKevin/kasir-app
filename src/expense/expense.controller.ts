@@ -6,27 +6,23 @@ import {
   Param,
   Patch,
   Post,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { ExpenseService } from './expense.service'
+import { ExpenseService } from './expense.service';
 
-import { CreateExpenseDto } from './dto/create-expense.dto'
-import { UpdateExpenseDto } from './dto/update-expense.dto'
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Controller('expenses')
 export class ExpenseController {
-  constructor(
-    private readonly expenseService: ExpenseService,
-  ) {}
+  constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateExpenseDto,
   ) {
-    return this.expenseService.create(
-      dto,
-    )
+    return this.expenseService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -34,9 +30,7 @@ export class ExpenseController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.expenseService.findAll(
-      storeId,
-    )
+    return this.expenseService.findAll(storeId);
   }
 
   @Get('summary/:storeId')
@@ -44,9 +38,7 @@ export class ExpenseController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.expenseService.summary(
-      storeId,
-    )
+    return this.expenseService.summary(storeId);
   }
 
   @Get(':id')
@@ -54,9 +46,7 @@ export class ExpenseController {
     @Param('id')
     id: string,
   ) {
-    return this.expenseService.findOne(
-      id,
-    )
+    return this.expenseService.findOne(id);
   }
 
   @Patch(':id')
@@ -67,10 +57,7 @@ export class ExpenseController {
     @Body()
     dto: UpdateExpenseDto,
   ) {
-    return this.expenseService.update(
-      id,
-      dto,
-    )
+    return this.expenseService.update(id, dto);
   }
 
   @Delete(':id')
@@ -78,8 +65,6 @@ export class ExpenseController {
     @Param('id')
     id: string,
   ) {
-    return this.expenseService.remove(
-      id,
-    )
+    return this.expenseService.remove(id);
   }
 }

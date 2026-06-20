@@ -1,29 +1,24 @@
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator'
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateStoreDto {
   @IsString()
-  name!: string
+  name!: string;
 
   @IsEmail()
-  email!: string
+  email!: string;
 
   @MinLength(6)
-  password!: string
+  password!: string;
 
   @IsOptional()
   @IsString()
-  phone?: string
+  phone?: string;
 
   @IsOptional()
   @IsString()
-  address?: string
+  address?: string;
 
   @IsOptional()
   @IsString()
-  logo?: string
+  logo?: string;
 }

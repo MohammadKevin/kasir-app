@@ -14,38 +14,27 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 
 @Injectable()
 export class StoreService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    adminId: string,
-    dto: CreateStoreDto,
-  ) {
-    const admin =
-      await this.prisma.admin.findUnique({
-        where: {
-          id: adminId,
-        },
-      });
+  async create(adminId: string, dto: CreateStoreDto) {
+    const admin = await this.prisma.admin.findUnique({
+      where: {
+        id: adminId,
+      },
+    });
 
     if (!admin) {
-      throw new UnauthorizedException(
-        'Admin tidak ditemukan',
-      );
+      throw new UnauthorizedException('Admin tidak ditemukan');
     }
 
-    const exist =
-      await this.prisma.store.findUnique({
-        where: {
-          email: dto.email,
-        },
-      });
+    const exist = await this.prisma.store.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
 
     if (exist) {
-      throw new ConflictException(
-        'Email store sudah digunakan',
-      );
+      throw new ConflictException('Email store sudah digunakan');
     }
 
     return this.prisma.store.create({
@@ -56,11 +45,7 @@ export class StoreService {
 
         email: dto.email,
 
-        password:
-          await bcrypt.hash(
-            dto.password,
-            10,
-          ),
+        password: await bcrypt.hash(dto.password, 10),
 
         phone: dto.phone,
 
@@ -81,9 +66,7 @@ export class StoreService {
     });
   }
 
-  async findAll(
-    adminId: string,
-  ) {
+  async findAll(adminId: string) {
     const stores = await this.prisma.store.findMany({
       where: {
         adminId,
@@ -113,35 +96,27 @@ export class StoreService {
     });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id,
-        },
+  async findOne(id: string) {
+    const store = await this.prisma.store.findUnique({
+      where: {
+        id,
+      },
 
-        include: {
-          cashiers: true,
-          products: true,
-          customers: true,
-        },
-      });
+      include: {
+        cashiers: true,
+        products: true,
+        customers: true,
+      },
+    });
 
     if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      );
+      throw new NotFoundException('Store tidak ditemukan');
     }
 
     return store;
   }
 
-  async update(
-    id: string,
-    dto: UpdateStoreDto,
-  ) {
+  async update(id: string, dto: UpdateStoreDto) {
     await this.findOne(id);
 
     const data: any = {
@@ -149,11 +124,7 @@ export class StoreService {
     };
 
     if (dto.password) {
-      data.password =
-        await bcrypt.hash(
-          dto.password,
-          10,
-        );
+      data.password = await bcrypt.hash(dto.password, 10);
     }
 
     return this.prisma.store.update({
@@ -184,31 +155,24 @@ export class StoreService {
     });
   }
 
-  async remove(
-  adminId: string,
-  id: string,
-) {
-  const store =
-    await this.prisma.store.findFirst({
+  async remove(adminId: string, id: string) {
+    const store = await this.prisma.store.findFirst({
       where: {
         id,
         adminId,
       },
-    })
+    });
 
-  if (!store) {
-    throw new NotFoundException(
-      'Store tidak ditemukan',
-    )
-  }
+    if (!store) {
+      throw new NotFoundException('Store tidak ditemukan');
+    }
 
-  await this.prisma.$transaction(
-    async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       await tx.cartHold.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.auditLog.deleteMany({
         where: {
@@ -216,13 +180,13 @@ export class StoreService {
             storeId: id,
           },
         },
-      })
+      });
 
       await tx.shift.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.transactionItem.deleteMany({
         where: {
@@ -230,13 +194,13 @@ export class StoreService {
             storeId: id,
           },
         },
-      })
+      });
 
       await tx.transaction.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.purchaseItem.deleteMany({
         where: {
@@ -244,13 +208,13 @@ export class StoreService {
             storeId: id,
           },
         },
-      })
+      });
 
       await tx.purchase.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.discountProduct.deleteMany({
         where: {
@@ -267,67 +231,65 @@ export class StoreService {
             },
           ],
         },
-      })
+      });
 
       await tx.stockMovement.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.discount.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.product.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.category.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.supplier.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.customer.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.expense.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.user.deleteMany({
         where: {
           storeId: id,
         },
-      })
+      });
 
       await tx.store.delete({
         where: {
           id,
         },
-      })
-    },
-  )
+      });
+    });
 
-  return {
-    message:
-      'Store beserta seluruh data berhasil dihapus',
+    return {
+      message: 'Store beserta seluruh data berhasil dihapus',
+    };
   }
-}
 }

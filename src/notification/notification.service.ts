@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, userType: string, title: string, content: string) {
+  async create(
+    userId: string,
+    userType: string,
+    title: string,
+    content: string,
+  ) {
     return this.prisma.notification.create({
       data: {
         userId,
@@ -14,7 +19,7 @@ export class NotificationService {
         content,
         isRead: false,
       },
-    })
+    });
   }
 
   async findAll(userId: string, userType: string) {
@@ -26,7 +31,7 @@ export class NotificationService {
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
   }
 
   async markAsRead(id: string, userId: string, userType: string) {
@@ -36,16 +41,16 @@ export class NotificationService {
         userId,
         userType,
       },
-    })
+    });
 
     if (!notif) {
-      throw new NotFoundException('Notifikasi tidak ditemukan')
+      throw new NotFoundException('Notifikasi tidak ditemukan');
     }
 
     return this.prisma.notification.update({
       where: { id },
       data: { isRead: true },
-    })
+    });
   }
 
   async markAllAsRead(userId: string, userType: string) {
@@ -58,6 +63,6 @@ export class NotificationService {
       data: {
         isRead: true,
       },
-    })
+    });
   }
 }

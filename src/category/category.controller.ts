@@ -6,27 +6,23 @@ import {
   Param,
   Patch,
   Post,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { CategoryService } from './category.service'
+import { CategoryService } from './category.service';
 
-import { CreateCategoryDto } from './dto/create-category.dto'
-import { UpdateCategoryDto } from './dto/update-category.dto'
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('categories')
 export class CategoryController {
-  constructor(
-    private readonly categoryService: CategoryService,
-  ) {}
+  constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
   create(
     @Body()
     dto: CreateCategoryDto,
   ) {
-    return this.categoryService.create(
-      dto,
-    )
+    return this.categoryService.create(dto);
   }
 
   @Get('store/:storeId')
@@ -34,9 +30,7 @@ export class CategoryController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.categoryService.findAll(
-      storeId,
-    )
+    return this.categoryService.findAll(storeId);
   }
 
   @Get(':id')
@@ -44,9 +38,7 @@ export class CategoryController {
     @Param('id')
     id: string,
   ) {
-    return this.categoryService.findOne(
-      id,
-    )
+    return this.categoryService.findOne(id);
   }
 
   @Patch(':id')
@@ -57,10 +49,7 @@ export class CategoryController {
     @Body()
     dto: UpdateCategoryDto,
   ) {
-    return this.categoryService.update(
-      id,
-      dto,
-    )
+    return this.categoryService.update(id, dto);
   }
 
   @Delete(':id')
@@ -68,8 +57,6 @@ export class CategoryController {
     @Param('id')
     id: string,
   ) {
-    return this.categoryService.remove(
-      id,
-    )
+    return this.categoryService.remove(id);
   }
 }

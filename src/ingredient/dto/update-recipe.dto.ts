@@ -1,18 +1,24 @@
-import { IsArray, IsNotEmpty, IsNumber, IsString, ValidateNested } from 'class-validator'
-import { Type } from 'class-transformer'
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RecipeItemDto {
   @IsString()
   @IsNotEmpty()
-  ingredientId: string
+  ingredientId: string;
 
   @IsNumber()
-  quantity: number
+  quantity: number;
 }
 
 export class UpdateRecipeDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RecipeItemDto)
-  items: RecipeItemDto[]
+  items: RecipeItemDto[];
 }

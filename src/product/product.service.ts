@@ -2,181 +2,112 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
-import { CreateProductDto } from './dto/create-product.dto'
-import { UpdateProductDto } from './dto/update-product.dto'
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  private MAX_INT =
-    2147483647
+  private MAX_INT = 2147483647;
 
-  private createBarcode(
-    productId?: string,
-  ) {
+  private createBarcode(productId?: string) {
     return (
       `${Date.now()}` +
-      `${Math.floor(
-        1000 +
-        Math.random() * 9000,
-      )}` +
-      `${productId?.slice(
-        0,
-        4,
-      ) ?? ''}`
-    )
+      `${Math.floor(1000 + Math.random() * 9000)}` +
+      `${productId?.slice(0, 4) ?? ''}`
+    );
   }
 
   private createSku() {
-    return `PRD-${Math.floor(
-      100000 +
-      Math.random() *
-      900000,
-    )}`
+    return `PRD-${Math.floor(100000 + Math.random() * 900000)}`;
   }
 
-  async create(
-    dto: CreateProductDto,
-  ) {
-    const store =
-      await this.prisma.store.findUnique({
-        where: {
-          id:
-            dto.storeId,
-        },
-      })
+  async create(dto: CreateProductDto) {
+    const store = await this.prisma.store.findUnique({
+      where: {
+        id: dto.storeId,
+      },
+    });
 
     if (!store) {
-      throw new NotFoundException(
-        'Store tidak ditemukan',
-      )
+      throw new NotFoundException('Store tidak ditemukan');
     }
 
-    const category =
-      await this.prisma.category.findFirst({
-        where: {
-          id:
-            dto.categoryId,
+    const category = await this.prisma.category.findFirst({
+      where: {
+        id: dto.categoryId,
 
-          storeId:
-            dto.storeId,
-        },
-      })
+        storeId: dto.storeId,
+      },
+    });
 
     if (!category) {
-      throw new NotFoundException(
-        'Category tidak ditemukan',
-      )
+      throw new NotFoundException('Category tidak ditemukan');
     }
 
-    if (
-      dto.costPrice >
-      this.MAX_INT
-    ) {
-      throw new ConflictException(
-        'Harga modal terlalu besar',
-      )
+    if (dto.costPrice > this.MAX_INT) {
+      throw new ConflictException('Harga modal terlalu besar');
     }
 
-    if (
-      dto.sellingPrice >
-      this.MAX_INT
-    ) {
-      throw new ConflictException(
-        'Harga jual terlalu besar',
-      )
+    if (dto.sellingPrice > this.MAX_INT) {
+      throw new ConflictException('Harga jual terlalu besar');
     }
 
-    const sku =
-      dto.sku ??
-      this.createSku()
+    const sku = dto.sku ?? this.createSku();
 
-    const skuExist =
-      await this.prisma.product.findFirst({
-        where: {
-          storeId:
-            dto.storeId,
-          sku,
-        },
-      })
+    const skuExist = await this.prisma.product.findFirst({
+      where: {
+        storeId: dto.storeId,
+        sku,
+      },
+    });
 
     if (skuExist) {
-      throw new ConflictException(
-        'SKU sudah digunakan',
-      )
+      throw new ConflictException('SKU sudah digunakan');
     }
 
-    const product =
-      await this.prisma.product.create({
-        data: {
-          storeId:
-            dto.storeId,
+    const product = await this.prisma.product.create({
+      data: {
+        storeId: dto.storeId,
 
-          categoryId:
-            dto.categoryId,
+        categoryId: dto.categoryId,
 
-          name:
-            dto.name,
+        name: dto.name,
 
-          image:
-            dto.image ??
-            null,
+        image: dto.image ?? null,
 
-          sku,
+        sku,
 
-          barcode:
-            null,
+        barcode: null,
 
-          description:
-            dto.description ??
-            null,
+        description: dto.description ?? null,
 
-          costPrice:
-            Number(
-              dto.costPrice,
-            ),
+        costPrice: Number(dto.costPrice),
 
-          sellingPrice:
-            Number(
-              dto.sellingPrice,
-            ),
+        sellingPrice: Number(dto.sellingPrice),
 
-          stock:
-            dto.stock ??
-            0,
+        stock: dto.stock ?? 0,
 
-          minimumStock:
-            dto.minimumStock ??
-            0,
+        minimumStock: dto.minimumStock ?? 0,
 
-          isActive:
-            dto.isActive ??
-            true,
-        },
+        isActive: dto.isActive ?? true,
+      },
 
-        include: {
-          category:
-            true,
-        },
-      })
+      include: {
+        category: true,
+      },
+    });
 
-    const barcode =
-      dto.barcode ??
-      this.createBarcode(
-        product.id,
-      )
+    const barcode = dto.barcode ?? this.createBarcode(product.id);
 
     return this.prisma.product.update({
       where: {
-        id:
-          product.id,
+        id: product.id,
       },
 
       data: {
@@ -184,15 +115,12 @@ export class ProductService {
       },
 
       include: {
-        category:
-          true,
+        category: true,
       },
-    })
+    });
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.product.findMany({
       where: {
         storeId,
@@ -212,75 +140,61 @@ export class ProductService {
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findOne(
-    id: string,
-  ) {
-    const product =
-      await this.prisma.product.findFirst({
-        where: {
-          id,
-          deletedAt: null,
-        },
+  async findOne(id: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
 
-        include: {
-          category: true,
+      include: {
+        category: true,
 
-          discounts: {
-            include: {
-              discount: true,
-            },
+        discounts: {
+          include: {
+            discount: true,
           },
         },
-      })
+      },
+    });
 
     if (!product) {
-      throw new NotFoundException(
-        'Produk tidak ditemukan',
-      )
+      throw new NotFoundException('Produk tidak ditemukan');
     }
 
-    return product
+    return product;
   }
 
-  async findByBarcode(
-    barcode: string,
-  ) {
-    const product =
-      await this.prisma.product.findFirst({
-        where: {
-          barcode,
-          deletedAt: null,
-        },
+  async findByBarcode(barcode: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        barcode,
+        deletedAt: null,
+      },
 
-        include: {
-          category: true,
+      include: {
+        category: true,
 
-          discounts: {
-            include: {
-              discount: true,
-            },
+        discounts: {
+          include: {
+            discount: true,
           },
         },
-      })
+      },
+    });
 
     if (!product) {
-      throw new NotFoundException(
-        'Barcode tidak ditemukan',
-      )
+      throw new NotFoundException('Barcode tidak ditemukan');
     }
 
-    return product
+    return product;
   }
 
-  async generateBarcode(
-    id: string,
-  ) {
-    await this.findOne(
-      id,
-    )
+  async generateBarcode(id: string) {
+    await this.findOne(id);
 
     return this.prisma.product.update({
       where: {
@@ -288,57 +202,44 @@ export class ProductService {
       },
 
       data: {
-        barcode:
-          this.createBarcode(
-            id,
-          ),
+        barcode: this.createBarcode(id),
       },
-    })
+    });
   }
 
-  async generateAllBarcodes(
-    storeId: string,
-  ) {
-    const products =
-      await this.prisma.product.findMany({
-        where: {
-          storeId,
+  async generateAllBarcodes(storeId: string) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        storeId,
 
-          deletedAt:
-            null,
-        },
-      })
+        deletedAt: null,
+      },
+    });
 
-    for (
-      const p
-      of products
-    ) {
+    for (const p of products) {
       await this.prisma.product.update({
         where: {
-          id:
-            p.id,
+          id: p.id,
         },
 
         data: {
-          barcode:
-            this.createBarcode(
-              p.id,
-            ),
+          barcode: this.createBarcode(p.id),
         },
-      })
+      });
     }
 
     return {
-      message:
-        `${products.length} barcode berhasil dibuat`,
-    }
+      message: `${products.length} barcode berhasil dibuat`,
+    };
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.findOne(id);
 
     const updateData = Object.fromEntries(
-      Object.entries(dto).filter(([_, value]) => value !== undefined && value !== "")
+      Object.entries(dto).filter(
+        ([_, value]) => value !== undefined && value !== '',
+      ),
     );
 
     return this.prisma.product.update({
@@ -348,13 +249,8 @@ export class ProductService {
     });
   }
 
-  async updateStock(
-    id: string,
-    stock: number,
-  ) {
-    await this.findOne(
-      id,
-    )
+  async updateStock(id: string, stock: number) {
+    await this.findOne(id);
 
     return this.prisma.product.update({
       where: {
@@ -364,15 +260,11 @@ export class ProductService {
       data: {
         stock,
       },
-    })
+    });
   }
 
-  async remove(
-    id: string,
-  ) {
-    await this.findOne(
-      id,
-    )
+  async remove(id: string) {
+    await this.findOne(id);
 
     await this.prisma.product.update({
       where: {
@@ -380,17 +272,14 @@ export class ProductService {
       },
 
       data: {
-        deletedAt:
-          new Date(),
+        deletedAt: new Date(),
 
-        isActive:
-          false,
+        isActive: false,
       },
-    })
+    });
 
     return {
-      message:
-        'Produk berhasil dihapus',
-    }
+      message: 'Produk berhasil dihapus',
+    };
   }
 }

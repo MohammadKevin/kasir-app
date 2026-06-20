@@ -1,15 +1,15 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateTableDto {
   @IsString()
   @IsOptional()
-  number?: string
+  number?: string;
 
   @IsNumber()
   @IsOptional()
-  capacity?: number
+  capacity?: number;
 
   @IsString()
   @IsOptional()
-  status?: string // AVAILABLE, OCCUPIED, BILLING
+  status?: string; // AVAILABLE, OCCUPIED, BILLING
 }

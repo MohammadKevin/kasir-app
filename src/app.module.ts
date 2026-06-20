@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
-import { AppController } from './app.controller'
-import { AppService } from './app.service'
-import { PrismaModule } from './prisma/prisma.module'
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StoreModule } from './store/store.module';
 import { UserModule } from './user/user.module';
@@ -26,6 +26,7 @@ import { IngredientModule } from './ingredient/ingredient.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { NotificationModule } from './notification/notification.module';
 import { ChatModule } from './chat/chat.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ChatModule } from './chat/chat.module';
     AttendanceModule,
     NotificationModule,
     ChatModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

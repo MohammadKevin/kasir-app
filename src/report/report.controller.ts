@@ -1,20 +1,12 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  Res,
-} from '@nestjs/common'
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 
-import express from 'express'
+import express from 'express';
 
-import { ReportService } from './report.service'
+import { ReportService } from './report.service';
 
 @Controller('reports')
 export class ReportController {
-  constructor(
-    private readonly reportService: ReportService,
-  ) {}
+  constructor(private readonly reportService: ReportService) {}
 
   @Get('sales/:storeId')
   sales(
@@ -27,11 +19,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.sales(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.sales(storeId, startDate, endDate);
   }
 
   @Get('expenses/:storeId')
@@ -45,11 +33,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.expenses(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.expenses(storeId, startDate, endDate);
   }
 
   @Get('products/:storeId')
@@ -57,9 +41,7 @@ export class ReportController {
     @Param('storeId')
     storeId: string,
   ) {
-    return this.reportService.products(
-      storeId,
-    )
+    return this.reportService.products(storeId);
   }
 
   @Get('shifts/:storeId')
@@ -73,11 +55,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.shifts(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.shifts(storeId, startDate, endDate);
   }
 
   @Get('purchases/:storeId')
@@ -91,11 +69,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.purchases(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.purchases(storeId, startDate, endDate);
   }
 
   @Get('stock-movements/:storeId')
@@ -109,11 +83,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.stockMovements(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.stockMovements(storeId, startDate, endDate);
   }
 
   @Get('profit/:storeId')
@@ -127,11 +97,7 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    return this.reportService.profit(
-      storeId,
-      startDate,
-      endDate,
-    )
+    return this.reportService.profit(storeId, startDate, endDate);
   }
 
   @Get('sales-by-outlet/:storeId')
@@ -140,7 +106,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByOutlet(storeId, startDate, endDate)
+    return this.reportService.salesByOutlet(storeId, startDate, endDate);
   }
 
   @Get('sales-by-date/:storeId')
@@ -149,7 +115,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByDate(storeId, startDate, endDate)
+    return this.reportService.salesByDate(storeId, startDate, endDate);
   }
 
   @Get('sales-by-hour/:storeId')
@@ -158,7 +124,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByHour(storeId, startDate, endDate)
+    return this.reportService.salesByHour(storeId, startDate, endDate);
   }
 
   @Get('sales-by-category/:storeId')
@@ -167,7 +133,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByCategory(storeId, startDate, endDate)
+    return this.reportService.salesByCategory(storeId, startDate, endDate);
   }
 
   @Get('sales-by-customer/:storeId')
@@ -176,7 +142,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByCustomer(storeId, startDate, endDate)
+    return this.reportService.salesByCustomer(storeId, startDate, endDate);
   }
 
   @Get('sales-by-payment-method/:storeId')
@@ -185,7 +151,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.salesByPaymentMethod(storeId, startDate, endDate)
+    return this.reportService.salesByPaymentMethod(storeId, startDate, endDate);
   }
 
   @Get('taxes/:storeId')
@@ -194,7 +160,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.taxes(storeId, startDate, endDate)
+    return this.reportService.taxes(storeId, startDate, endDate);
   }
 
   @Get('promos/:storeId')
@@ -203,7 +169,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.promos(storeId, startDate, endDate)
+    return this.reportService.promos(storeId, startDate, endDate);
   }
 
   @Get('daily-profit/:storeId')
@@ -212,7 +178,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.dailyProfit(storeId, startDate, endDate)
+    return this.reportService.dailyProfit(storeId, startDate, endDate);
   }
 
   @Get('product-profit/:storeId')
@@ -221,7 +187,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.productProfit(storeId, startDate, endDate)
+    return this.reportService.productProfit(storeId, startDate, endDate);
   }
 
   @Get('attendance/:storeId')
@@ -230,7 +196,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.attendance(storeId, startDate, endDate)
+    return this.reportService.attendance(storeId, startDate, endDate);
   }
 
   @Get('commission/:storeId')
@@ -239,7 +205,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.reportService.commission(storeId, startDate, endDate)
+    return this.reportService.commission(storeId, startDate, endDate);
   }
 
   @Get('sales/:storeId/excel')
@@ -256,24 +222,20 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    const buffer =
-      await this.reportService.salesExcel(
-        storeId,
-        startDate,
-        endDate,
-      )
+    const buffer = await this.reportService.salesExcel(
+      storeId,
+      startDate,
+      endDate,
+    );
 
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
+    );
 
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename=sales.xlsx',
-    )
+    res.setHeader('Content-Disposition', 'attachment; filename=sales.xlsx');
 
-    res.send(buffer)
+    res.send(buffer);
   }
 
   @Get('sales/:storeId/pdf')
@@ -290,23 +252,16 @@ export class ReportController {
     @Query('endDate')
     endDate?: string,
   ) {
-    const buffer =
-      await this.reportService.salesPdf(
-        storeId,
-        startDate,
-        endDate,
-      )
+    const buffer = await this.reportService.salesPdf(
+      storeId,
+      startDate,
+      endDate,
+    );
 
-    res.setHeader(
-      'Content-Type',
-      'application/pdf',
-    )
+    res.setHeader('Content-Type', 'application/pdf');
 
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename=sales.pdf',
-    )
+    res.setHeader('Content-Disposition', 'attachment; filename=sales.pdf');
 
-    res.send(buffer)
+    res.send(buffer);
   }
 }

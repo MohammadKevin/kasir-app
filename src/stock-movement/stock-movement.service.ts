@@ -2,188 +2,121 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import {
-  PrismaService,
-} from '../prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service';
 
-import {
-  Prisma,
-} from '@prisma/client'
+import { Prisma } from '@prisma/client';
 
-import {
-  CreateStockMovementDto,
-} from './dto/create-stock-movement.dto'
+import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
 
 @Injectable()
 export class StockMovementService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    dto: CreateStockMovementDto,
-  ) {
-
-    let product:
-      Prisma.ProductGetPayload<{}> |
-      null =
-      null
+  async create(dto: CreateStockMovementDto) {
+    let product: Prisma.ProductGetPayload<{}> | null = null;
 
     // SCAN BARCODE
-    if (
-      dto.barcode
-    ) {
-      product =
-        await this.prisma.product.findFirst({
-          where: {
-            barcode:
-              dto.barcode,
+    if (dto.barcode) {
+      product = await this.prisma.product.findFirst({
+        where: {
+          barcode: dto.barcode,
 
-            storeId:
-              dto.storeId,
+          storeId: dto.storeId,
 
-            deletedAt:
-              null,
-          },
-        })
+          deletedAt: null,
+        },
+      });
     }
 
     // MANUAL PRODUCT
-    if (
-      !product &&
-      dto.productId
-    ) {
-      product =
-        await this.prisma.product.findFirst({
-          where: {
-            id:
-              dto.productId,
+    if (!product && dto.productId) {
+      product = await this.prisma.product.findFirst({
+        where: {
+          id: dto.productId,
 
-            storeId:
-              dto.storeId,
+          storeId: dto.storeId,
 
-            deletedAt:
-              null,
-          },
-        })
+          deletedAt: null,
+        },
+      });
     }
 
-    if (
-      !product
-    ) {
-      throw new NotFoundException(
-        'Produk tidak ditemukan',
-      )
+    if (!product) {
+      throw new NotFoundException('Produk tidak ditemukan');
     }
 
-    return this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
+    return this.prisma.$transaction(async (tx) => {
+      let stock = Number(product.stock);
 
-        let stock =
-          Number(
-            product.stock,
-          )
+      if (dto.type === 'IN') {
+        stock += dto.qty;
+      }
 
-        if (
-          dto.type ===
-          'IN'
-        ) {
-          stock +=
-            dto.qty
+      if (dto.type === 'OUT' || dto.type === 'DAMAGED') {
+        if (stock < dto.qty) {
+          throw new BadRequestException('Stok tidak mencukupi');
         }
 
-        if (
-          dto.type ===
-            'OUT' ||
-          dto.type ===
-            'DAMAGED'
-        ) {
-          if (
-            stock <
-            dto.qty
-          ) {
-            throw new BadRequestException(
-              'Stok tidak mencukupi',
-            )
-          }
+        stock -= dto.qty;
+      }
 
-          stock -=
-            dto.qty
-        }
+      const updated = await tx.product.update({
+        where: {
+          id: product.id,
+        },
 
-        const updated =
-          await tx.product.update({
-            where: {
-              id:
-                product.id,
-            },
+        data: {
+          stock,
+        },
+      });
 
-            data: {
-              stock,
-            },
-          })
-
-        if (updated.isActive && updated.stock <= updated.minimumStock) {
-          await tx.notification.create({
+      if (updated.isActive && updated.stock <= updated.minimumStock) {
+        await tx.notification
+          .create({
             data: {
               userId: dto.storeId,
               userType: 'STORE',
               title: 'Stok Menipis',
               content: `Stok produk ${product.name} saat ini tinggal ${updated.stock} (batas minimum: ${product.minimumStock})`,
-              isRead: false
-            }
-          }).catch(err => {
-            console.warn('Gagal membuat notifikasi stok menipis:', err.message)
-          })
-        }
-
-        const history =
-          await tx.stockMovement.create({
-            data: {
-              storeId:
-                dto.storeId,
-
-              productId:
-                product.id,
-
-              qty:
-                dto.qty,
-
-              type:
-                dto.type,
-
-              note:
-                dto.note ??
-                null,
-            },
-
-            include: {
-              product:
-                true,
+              isRead: false,
             },
           })
+          .catch((err) => {
+            console.warn('Gagal membuat notifikasi stok menipis:', err.message);
+          });
+      }
 
-        return {
-          message:
-            'Stok berhasil diperbarui',
+      const history = await tx.stockMovement.create({
+        data: {
+          storeId: dto.storeId,
 
-          product:
-            updated,
+          productId: product.id,
 
-          movement:
-            history,
-        }
-      },
-    )
+          qty: dto.qty,
+
+          type: dto.type,
+
+          note: dto.note ?? null,
+        },
+
+        include: {
+          product: true,
+        },
+      });
+
+      return {
+        message: 'Stok berhasil diperbarui',
+
+        product: updated,
+
+        movement: history,
+      };
+    });
   }
 
-  async findAll(
-    storeId: string,
-  ) {
+  async findAll(storeId: string) {
     return this.prisma.stockMovement.findMany({
       where: {
         storeId,
@@ -201,29 +134,24 @@ export class StockMovementService {
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 
-  async findByProduct(
-    productId: string,
-  ) {
+  async findByProduct(productId: string) {
     return this.prisma.stockMovement.findMany({
       where: {
         productId,
       },
 
       include: {
-        product:
-          true,
+        product: true,
       },
 
       orderBy: {
-        createdAt:
-          'desc',
+        createdAt: 'desc',
       },
-    })
+    });
   }
 }

@@ -1,28 +1,23 @@
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-} from 'class-validator'
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 
-import { DiscountType } from '@prisma/client'
+import { DiscountType } from '@prisma/client';
 
 export class CreateDiscountDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
-  name!: string
+  name!: string;
 
   @IsEnum(DiscountType)
-  type!: DiscountType
+  type!: DiscountType;
 
   @IsInt()
-  value!: number
+  value!: number;
 
   @IsOptional()
-  startDate?: Date
+  startDate?: Date;
 
   @IsOptional()
-  endDate?: Date
+  endDate?: Date;
 }

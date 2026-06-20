@@ -1,17 +1,13 @@
-import {
-  IsInt,
-  IsString,
-  Min,
-} from 'class-validator'
+import { IsInt, IsString, Min } from 'class-validator';
 
 export class OpenShiftDto {
   @IsString()
-  storeId!: string
+  storeId!: string;
 
   @IsString()
-  userId!: string
+  userId!: string;
 
   @IsInt()
   @Min(0)
-  openingCash!: number
+  openingCash!: number;
 }
