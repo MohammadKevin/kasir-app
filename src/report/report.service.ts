@@ -308,6 +308,7 @@ export class ReportService {
             await this.prisma.transaction.aggregate({
                 _sum: {
                     total: true,
+                    totalDiscount: true,
                 },
                 where: salesWhere,
             });
@@ -341,6 +342,7 @@ export class ReportService {
         }
 
         const totalSales = sales._sum.total ?? 0;
+        const totalDiscount = sales._sum.totalDiscount ?? 0;
         const totalOpExpense = expenses._sum.amount ?? 0;
 
         // totalExpense = COGS + Operational Expenses
@@ -348,6 +350,7 @@ export class ReportService {
 
         return {
             totalSales,
+            totalDiscount,
             totalExpense,
             estimatedProfit: totalSales - totalExpense,
         };
