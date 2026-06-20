@@ -3,17 +3,20 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const transactions = await prisma.transaction.findMany({
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      invoiceNumber: true,
-      total: true,
-      createdAt: true,
-      status: true,
-    }
+  const categories = await prisma.category.findMany({
+    select: { id: true, name: true }
   });
-  console.log('ALL TRANSACTIONS:', JSON.stringify(transactions, null, 2));
+  console.log('CATEGORIES:', categories);
+  const gamis = categories.find(c => c.name.toLowerCase() === 'gamis');
+  if (gamis) {
+    const products = await prisma.product.findMany({
+      where: { categoryId: gamis.id },
+      select: { id: true, name: true, sellingPrice: true, stock: true, sku: true }
+    });
+    console.log('GAMIS PRODUCTS:', products);
+  } else {
+    console.log('GAMIS category not found');
+  }
 }
 
 main()

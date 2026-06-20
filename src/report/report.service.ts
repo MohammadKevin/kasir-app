@@ -193,6 +193,7 @@ export class ReportService {
             { header: 'Invoice', key: 'invoice' },
             { header: 'Kasir', key: 'cashier' },
             { header: 'Customer', key: 'customer' },
+            { header: 'Diskon', key: 'discount' },
             { header: 'Total', key: 'total' },
         ];
 
@@ -202,6 +203,7 @@ export class ReportService {
                 invoice: trx.invoiceNumber,
                 cashier: trx.cashier.name,
                 customer: trx.customer?.name ?? '-',
+                discount: trx.totalDiscount,
                 total: trx.total,
             });
         });
@@ -252,8 +254,9 @@ export class ReportService {
             doc.moveDown();
 
             transactions.forEach((trx) => {
+                const discText = trx.totalDiscount > 0 ? ` | Diskon: Rp ${trx.totalDiscount.toLocaleString('id-ID')}` : '';
                 doc.text(
-                    `${trx.invoiceNumber} | ${trx.cashier.name} | Rp ${trx.total}`,
+                    `${trx.invoiceNumber} | ${trx.cashier.name}${discText} | Rp ${trx.total.toLocaleString('id-ID')}`,
                 );
             });
 
