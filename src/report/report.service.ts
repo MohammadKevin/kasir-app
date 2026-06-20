@@ -492,12 +492,13 @@ export class ReportService {
             }
         });
 
-        const categorySalesMap = new Map<string, { categoryName: string, totalSales: number, quantity: number }>();
+        const categorySalesMap = new Map<string, { categoryName: string, totalSales: number, quantity: number, totalDiscount: number }>();
         for (const item of items) {
             const categoryName = item.product?.category?.name ?? 'Uncategorized';
-            const current = categorySalesMap.get(categoryName) || { categoryName, totalSales: 0, quantity: 0 };
+            const current = categorySalesMap.get(categoryName) || { categoryName, totalSales: 0, quantity: 0, totalDiscount: 0 };
             current.totalSales += item.subtotal;
             current.quantity += item.quantity;
+            current.totalDiscount += ((item.masterDiscount ?? 0) + (item.cashierDiscount ?? 0)) * item.quantity;
             categorySalesMap.set(categoryName, current);
         }
 
