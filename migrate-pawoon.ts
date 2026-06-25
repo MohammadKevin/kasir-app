@@ -58,11 +58,14 @@ async function main() {
     return;
   }
   
-  // Ambil store Laila Collection (default)
-  let store = stores.find(s => s.name.toLowerCase().includes('laila'));
+  // Ambil store berdasarkan ID spesifik
+  let store = stores.find(s => s.id === '468cc1a4-a3d3-4d4e-9480-14a8fa10b763');
   if (!store) {
-    store = stores[0];
-    console.warn(`WARNING: Store "LAILA COLLECTION" tidak ditemukan, menggunakan store default: ${store.name}`);
+    store = stores.find(s => s.id.startsWith('468cc1a4'));
+  }
+  if (!store) {
+    store = stores.find(s => s.name.toLowerCase().includes('laila')) || stores[0];
+    console.warn(`WARNING: Store "468cc1a4-a3d3-4d4e-9480-14a8fa10b763" tidak ditemukan, menggunakan store default: ${store.name}`);
   } else {
     console.log(`Menggunakan Store: ${store.name} (${store.id})`);
   }
@@ -85,7 +88,7 @@ async function main() {
   // A. Scan dari file transaksi (Sangat lengkap: Nama, SKU, Kategori, Harga Jual)
   const transactionsDir = path.join(baseDir, 'transactions');
   if (fs.existsSync(transactionsDir)) {
-    const files = fs.readdirSync(transactionsDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(transactionsDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     for (const file of files) {
       try {
         const filePath = path.join(transactionsDir, file);
@@ -136,7 +139,7 @@ async function main() {
   // B. Scan dari file opname (untuk mendapat Harga Modal / Cost Price)
   const opnameDir = path.join(baseDir, 'opname');
   if (fs.existsSync(opnameDir)) {
-    const files = fs.readdirSync(opnameDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(opnameDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     for (const file of files) {
       try {
         const filePath = path.join(opnameDir, file);
@@ -184,7 +187,7 @@ async function main() {
   // C. Scan dari file stok masuk & keluar (tambahan jika ada nama baru)
   const stockMasukDir = path.join(baseDir, 'stock-masuk');
   if (fs.existsSync(stockMasukDir)) {
-    const files = fs.readdirSync(stockMasukDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(stockMasukDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     for (const file of files) {
       try {
         const filePath = path.join(stockMasukDir, file);
@@ -218,7 +221,7 @@ async function main() {
 
   const stockKeluarDir = path.join(baseDir, 'stock-keluar');
   if (fs.existsSync(stockKeluarDir)) {
-    const files = fs.readdirSync(stockKeluarDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(stockKeluarDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     for (const file of files) {
       try {
         const filePath = path.join(stockKeluarDir, file);
@@ -365,7 +368,7 @@ async function main() {
   // A. PROSES STOK OPNAME
   // ==========================================
   if (fs.existsSync(opnameDir)) {
-    const files = fs.readdirSync(opnameDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(opnameDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     console.log(`\n--- FASE 2: MEMPROSES STOK OPNAME (${files.length} file) ---`);
     let opnameCount = 0;
     let opnameItemsCount = 0;
@@ -437,7 +440,7 @@ async function main() {
   // B. PROSES STOK MASUK
   // ==========================================
   if (fs.existsSync(stockMasukDir)) {
-    const files = fs.readdirSync(stockMasukDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(stockMasukDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     console.log(`\n--- FASE 3: MEMPROSES STOK MASUK (${files.length} file) ---`);
     let count = 0;
     let itemsCount = 0;
@@ -499,7 +502,7 @@ async function main() {
   // C. PROSES STOK KELUAR
   // ==========================================
   if (fs.existsSync(stockKeluarDir)) {
-    const files = fs.readdirSync(stockKeluarDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(stockKeluarDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     console.log(`\n--- FASE 4: MEMPROSES STOK KELUAR (${files.length} file) ---`);
     let count = 0;
     let itemsCount = 0;
@@ -561,7 +564,7 @@ async function main() {
   // D. PROSES TRANSAKSI PENJUALAN
   // ==========================================
   if (fs.existsSync(transactionsDir)) {
-    const files = fs.readdirSync(transactionsDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx'));
+    const files = fs.readdirSync(transactionsDir).filter(f => f.endsWith('.xls') || f.endsWith('.xlsx') || f.endsWith('.csv'));
     console.log(`\n--- FASE 5: MEMPROSES TRANSAKSI PENJUALAN (${files.length} file) ---`);
     let totalTransactionsImported = 0;
     let totalTransactionItemsImported = 0;
