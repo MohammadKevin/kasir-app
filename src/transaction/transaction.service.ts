@@ -208,7 +208,7 @@ export class TransactionService {
 
       return await tx.transaction.create({
         data: {
-          invoiceNumber: this.generateInvoiceNumber(dto.storeId),
+          invoiceNumber: dto.invoiceNumber || this.generateInvoiceNumber(dto.storeId),
           subtotal: finalSubtotal,
           totalDiscount: finalTotalDiscount,
           total: finalTotal,
@@ -226,6 +226,8 @@ export class TransactionService {
           pointsEarned,
           pointsRedeemed,
           items: { createMany: { data: itemsData } },
+          createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
+          updatedAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
         },
       });
     });

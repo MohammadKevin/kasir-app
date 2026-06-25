@@ -20,6 +20,14 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
+  invoiceNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  createdAt?: string;
+
+  @IsOptional()
+  @IsString()
   customerId?: string;
 
   @IsOptional()
